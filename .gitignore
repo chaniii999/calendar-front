@@ -9,3 +9,5 @@ coverage/
 .idea/
 .DS_Store
 Thumbs.db
+
+_backend_snapshot/
