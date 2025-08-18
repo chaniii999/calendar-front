@@ -4,7 +4,7 @@ import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom'
 import { TodoPage } from './pages/TodoPage'
 import { CalendarPage } from './pages/CalendarPage'
 import LoginSuccess from './pages/LoginSuccess'
-import { readTokensFromStorage, clearTokensFromStorage } from '../lib/auth/session'
+import { readTokensFromStorage, clearTokensFromStorage, saveTokensToStorage } from '../lib/auth/session'
 import { setTokens, clearAuthTokens } from '../lib/api/http'
 
 function NavTabs() {
@@ -49,22 +49,62 @@ function NavTabs() {
 }
 
 export default function App() {
-  const tokens = readTokensFromStorage()
-  useEffect(() => {
-    if (tokens.accessToken && tokens.refreshToken) {
-      setTokens(tokens.accessToken, tokens.refreshToken)
+  const [isAuthChecking, setIsAuthChecking] = useState(true)
+  const [isAuthed, setIsAuthed] = useState(false)
+
+  function handleAppInitValidateAuth() {
+    const tokens = readTokensFromStorage()
+    if (!(tokens.accessToken && tokens.refreshToken)) {
+      clearAuthTokens()
+      setIsAuthed(false)
+      setIsAuthChecking(false)
+      return
     }
-  }, [])
-  const isAuthed = Boolean(tokens.accessToken && tokens.refreshToken)
+
+    setTokens(tokens.accessToken, tokens.refreshToken)
+
+    ;(async () => {
+      try {
+        const res = await fetch('/api/auth/refresh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken: tokens.refreshToken }),
+        })
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`)
+        }
+        const body = await res.json() as { ok: boolean, data: { accessToken: string, refreshToken: string } }
+        const next = body.data
+        setTokens(next.accessToken, next.refreshToken)
+        saveTokensToStorage(next.accessToken, next.refreshToken)
+        setIsAuthed(true)
+      } catch (_e) {
+        clearAuthTokens()
+        clearTokensFromStorage()
+        setIsAuthed(false)
+      } finally {
+        setIsAuthChecking(false)
+      }
+    })()
+  }
+
+  useEffect(handleAppInitValidateAuth, [])
+
   return (
     <BrowserRouter>
       {isAuthed && <NavTabs />}
       <Container sx={{ py: 3 }}>
-        <Routes>
-          <Route path="/" element={isAuthed ? <TodoPage /> : <LoginGate />} />
-          <Route path="/calendar" element={isAuthed ? <CalendarPage /> : <LoginGate />} />
-          <Route path="/login/success" element={<LoginSuccess />} />
-        </Routes>
+        {isAuthChecking ? (
+          <Routes>
+            <Route path="/login/success" element={<LoginSuccess />} />
+          </Routes>
+        ) : (
+          <Routes>
+            <Route path="/" element={isAuthed ? <TodoPage /> : <LoginGate />} />
+            <Route path="/calendar" element={isAuthed ? <CalendarPage /> : <LoginGate />} />
+            <Route path="/login/success" element={<LoginSuccess />} />
+          </Routes>
+        )}
       </Container>
     </BrowserRouter>
   )
