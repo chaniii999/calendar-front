@@ -3,11 +3,11 @@ import { createTheme } from '@mui/material/styles'
 const theme = createTheme({
   palette: {
     mode: 'light',
-    primary: { main: '#4F46E5' },
-    secondary: { main: '#06B6D4' },
-    background: { default: '#f7f7fb', paper: '#ffffff' },
+    primary: { main: '#2563EB' },
+    secondary: { main: '#64748B' },
+    background: { default: '#F8FAFC', paper: '#FFFFFF' },
   },
-  shape: { borderRadius: 10 },
+  shape: { borderRadius: 12 },
   typography: {
     fontFamily: [
       'Inter',
@@ -25,16 +25,31 @@ const theme = createTheme({
     button: { textTransform: 'none', fontWeight: 600 },
   },
   components: {
-    MuiAppBar: { defaultProps: { color: 'primary', elevation: 1 } },
+    MuiAppBar: { defaultProps: { color: 'transparent', elevation: 0 } },
     MuiPaper: {
-      defaultProps: { elevation: 1 },
-      styleOverrides: { root: { borderRadius: 12 } },
-    },
-    MuiCard: {
       defaultProps: { elevation: 1 },
       styleOverrides: { root: { borderRadius: 14 } },
     },
-    MuiButton: { defaultProps: { variant: 'contained', size: 'small' } },
+    MuiCard: {
+      defaultProps: { elevation: 1 },
+      styleOverrides: { root: { borderRadius: 16 } },
+    },
+    MuiButton: {
+      defaultProps: { variant: 'contained', size: 'small', color: 'primary' },
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          borderRadius: 10,
+        },
+      },
+    },
+    MuiIconButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 10,
+        },
+      },
+    },
     MuiTabs: { styleOverrides: { root: { minHeight: 44 } } },
     MuiTab: { styleOverrides: { root: { minHeight: 44 } } },
     MuiContainer: { defaultProps: { maxWidth: 'md' } },

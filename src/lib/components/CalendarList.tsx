@@ -1,11 +1,15 @@
 import React from 'react'
-import { List, ListItem, ListItemText, Chip, Stack, Typography, Divider } from '@mui/material'
+import { List, ListItem, ListItemText, Chip, Stack, Typography, Divider, Paper, IconButton } from '@mui/material'
+import EditIcon from '@mui/icons-material/Edit'
+import DeleteIcon from '@mui/icons-material/Delete'
 import dayjs from 'dayjs'
 import type { ScheduleListItem } from '../../ui/pages/calendar/types'
 
 export interface CalendarListProps {
 	items: ScheduleListItem[]
 	groupByDate?: boolean
+	onEdit?: (scheduleId: string) => void
+	onDelete?: (scheduleId: string) => void
 }
 
 function formatTimeRange(item: ScheduleListItem): string {
@@ -15,31 +19,47 @@ function formatTimeRange(item: ScheduleListItem): string {
 	return ''
 }
 
-export function CalendarList({ items, groupByDate = true }: CalendarListProps) {
+export function CalendarList({ items, groupByDate = true, onEdit, onDelete }: CalendarListProps) {
 	if (!items.length) {
 		return <Typography variant="body2" color="text.secondary">표시할 일정이 없습니다.</Typography>
 	}
 
+	function handleEditButtonClick(e: React.MouseEvent<HTMLButtonElement>) {
+		const id = e.currentTarget.getAttribute('data-id')
+		if (id && onEdit) onEdit(id)
+	}
+
+	function handleDeleteButtonClick(e: React.MouseEvent<HTMLButtonElement>) {
+		const id = e.currentTarget.getAttribute('data-id')
+		if (id && onDelete) onDelete(id)
+	}
+
 	if (!groupByDate) {
 		return (
-			<List>
+			<Stack spacing={1}>
 				{items.map(it => (
-					<ListItem key={it.id} sx={{ px: 1 }}>
-						<ListItemText
-							primary={it.title}
-							secondary={
-								<Stack spacing={0.25}>
-									<Typography variant="caption" color="text.secondary">{formatTimeRange(it)}</Typography>
-									{it.description && (
-										<Typography variant="caption" color="text.secondary">{it.description}</Typography>
-									)}
-								</Stack>
-							}
-						/>
-						{it.color && <Chip size="small" label={it.color} sx={{ ml: 1 }} />}
-					</ListItem>
+					<Paper key={it.id} variant="outlined" sx={{ p: 1.25 }}>
+						<Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={1}>
+							<Stack spacing={0.25} sx={{ minWidth: 0 }}>
+								<Typography variant="subtitle2" noWrap>{it.title}</Typography>
+								<Typography variant="caption" color="text.secondary">{formatTimeRange(it)}</Typography>
+								{it.description && (
+									<Typography variant="caption" color="text.secondary" sx={{ wordBreak: 'break-word' }}>{it.description}</Typography>
+								)}
+								{it.color && <Chip size="small" label={it.color} />}
+							</Stack>
+							<Stack direction="row" spacing={0.5}>
+								<IconButton size="small" color="primary" aria-label="수정" data-id={it.id} onClick={handleEditButtonClick}>
+									<EditIcon fontSize="small" />
+								</IconButton>
+								<IconButton size="small" color="secondary" aria-label="삭제" data-id={it.id} onClick={handleDeleteButtonClick}>
+									<DeleteIcon fontSize="small" />
+								</IconButton>
+							</Stack>
+						</Stack>
+					</Paper>
 				))}
-			</List>
+			</Stack>
 		)
 	}
 
@@ -58,24 +78,30 @@ export function CalendarList({ items, groupByDate = true }: CalendarListProps) {
 				<React.Fragment key={date}>
 					<Stack spacing={0.5}>
 						<Typography variant="subtitle2">{dayjs(date).format('YYYY-MM-DD (dd)')}</Typography>
-						<List>
+						<Stack spacing={1}>
 							{grouped[date].map(it => (
-								<ListItem key={it.id} sx={{ px: 1 }}>
-									<ListItemText
-										primary={it.title}
-										secondary={
-											<Stack spacing={0.25}>
-												<Typography variant="caption" color="text.secondary">{formatTimeRange(it)}</Typography>
-												{it.description && (
-													<Typography variant="caption" color="text.secondary">{it.description}</Typography>
-												)}
-											</Stack>
-										}
-									/>
-									{it.color && <Chip size="small" label={it.color} sx={{ ml: 1 }} />}
-								</ListItem>
+								<Paper key={it.id} variant="outlined" sx={{ p: 1.25 }}>
+									<Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={1}>
+										<Stack spacing={0.25} sx={{ minWidth: 0 }}>
+											<Typography variant="subtitle2" noWrap>{it.title}</Typography>
+											<Typography variant="caption" color="text.secondary">{formatTimeRange(it)}</Typography>
+											{it.description && (
+												<Typography variant="caption" color="text.secondary" sx={{ wordBreak: 'break-word' }}>{it.description}</Typography>
+											)}
+											{it.color && <Chip size="small" label={it.color} />}
+										</Stack>
+										<Stack direction="row" spacing={0.5}>
+											<IconButton size="small" color="primary" aria-label="수정" data-id={it.id} onClick={handleEditButtonClick}>
+												<EditIcon fontSize="small" />
+											</IconButton>
+											<IconButton size="small" color="secondary" aria-label="삭제" data-id={it.id} onClick={handleDeleteButtonClick}>
+												<DeleteIcon fontSize="small" />
+											</IconButton>
+										</Stack>
+									</Stack>
+								</Paper>
 							))}
-						</List>
+						</Stack>
 					</Stack>
 					{idx < keys.length - 1 && <Divider />}
 				</React.Fragment>

@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Box, Button, Card, CardContent, Stack, TextField, Typography } from '@mui/material'
-import { LocalizationProvider, DateCalendar } from '@mui/x-date-pickers'
+import { LocalizationProvider } from '@mui/x-date-pickers'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import dayjs, { Dayjs } from 'dayjs'
 import { ScheduleApi, ScheduleRequest, ScheduleResponse } from '../../lib/api/schedule'
 import { CalendarToolbar, type ViewMode } from '../../lib/components/CalendarToolbar'
 import { ScheduleCreateDialog } from '../../lib/components/ScheduleCreateDialog'
+import { ScheduleEditDialog } from '../../lib/components/ScheduleEditDialog'
 import { CalendarList } from '../../lib/components/CalendarList'
+import { CalendarSidebar } from '../../lib/components/CalendarSidebar'
 import type { ScheduleListItem } from './calendar/types'
 
 export function CalendarPage() {
@@ -14,6 +16,8 @@ export function CalendarPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [view, setView] = useState<ViewMode>('month')
   const [listItems, setListItems] = useState<ScheduleListItem[]>([])
+  const [editTarget, setEditTarget] = useState<ScheduleListItem | null>(null)
+  const [editOpen, setEditOpen] = useState(false)
 
   function getRangeByView(base: Dayjs, mode: ViewMode): { start: string, end: string } {
     if (mode === 'day') {
@@ -63,9 +67,33 @@ export function CalendarPage() {
   const handleAddScheduleButtonClick = () => setDialogOpen(true)
   const handleDialogClose = () => setDialogOpen(false)
   const handleViewChange = (next: ViewMode) => setView(next)
-  const handleCalendarValueChange = (newValue: Dayjs | null) => {
-    if (!newValue) return
-    setCursor(newValue)
+  const handleSidebarDateChange = (next: Dayjs) => setCursor(next)
+  const handleSidebarTodayClick = () => setCursor(dayjs())
+  const handleListItemEdit = (scheduleId: string) => {
+    const target = listItems.find(it => it.id === scheduleId) || null
+    setEditTarget(target)
+    setEditOpen(Boolean(target))
+  }
+  const handleListItemDelete = async (scheduleId: string) => {
+    try {
+      await ScheduleApi.remove(scheduleId)
+      setListItems(prev => prev.filter(it => it.id !== scheduleId))
+    } catch (_e) {
+      // 에러 처리는 추후 스낵바/다이얼로그로 개선 가능
+    }
+  }
+  const handleEditDialogClose = () => setEditOpen(false)
+  const handleEditDialogUpdated = (item: ScheduleResponse) => {
+    setListItems(prev => prev.map(it => it.id === item.id ? {
+      id: item.id,
+      title: item.title,
+      scheduleDate: item.scheduleDate,
+      startTime: item.startTime,
+      endTime: item.endTime,
+      color: item.color,
+      isAllDay: item.isAllDay,
+      description: item.description,
+    } : it))
   }
   const handleDialogCreated = (item: ScheduleResponse) => {
     setListItems(prev => [{
@@ -91,10 +119,26 @@ export function CalendarPage() {
           onNext={handleNextMonthButtonClick}
           onAdd={handleAddScheduleButtonClick}
         />
-        <DateCalendar value={cursor} onChange={handleCalendarValueChange} views={[ 'day', 'month', 'year' ]} />
-        <CalendarList items={listItems} groupByDate={true} />
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+          <Stack sx={{ width: { xs: '100%', md: 320 }, flexShrink: 0 }}>
+            <CalendarSidebar
+              cursor={cursor}
+              onDateChange={handleSidebarDateChange}
+              onTodayClick={handleSidebarTodayClick}
+            />
+          </Stack>
+          <Stack sx={{ flex: 1 }} spacing={2}>
+            <CalendarList
+              items={listItems}
+              groupByDate={true}
+              onEdit={handleListItemEdit}
+              onDelete={handleListItemDelete}
+            />
+          </Stack>
+        </Stack>
       </Stack>
       <ScheduleCreateDialog open={dialogOpen} defaultDate={cursor.format('YYYY-MM-DD')} onClose={handleDialogClose} onCreated={handleDialogCreated} />
+      <ScheduleEditDialog open={editOpen} schedule={editTarget} onClose={handleEditDialogClose} onUpdated={handleEditDialogUpdated} />
     </LocalizationProvider>
   )
 }
