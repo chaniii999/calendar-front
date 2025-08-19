@@ -3,6 +3,7 @@ import { Stack, Button, Paper, IconButton } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import { DateCalendar } from '@mui/x-date-pickers'
 import type { Dayjs } from 'dayjs'
+import { QuickAddSchedule } from './QuickAddSchedule'
 
 export interface CalendarSidebarProps {
 	cursor: Dayjs
@@ -33,6 +34,7 @@ export function CalendarSidebar({ cursor, onDateChange, onTodayClick, onAddClick
 				<IconButton color="primary" onClick={handleAddButtonClick} aria-label="일정 추가">
 					<AddIcon />
 				</IconButton>
+				<QuickAddSchedule defaultDate={cursor.format('YYYY-MM-DD')} onCreated={() => {}} />
 			</Stack>
 		</Paper>
 	)

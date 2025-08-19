@@ -45,7 +45,7 @@ function NavTabs() {
         <AppBar position="static" color="transparent" elevation={0}>
           <Toolbar sx={{ gap: 2 }}>
             <Avatar sx={{ width: 28, height: 28, bgcolor: 'primary.main' }}>C</Avatar>
-            <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700 }}>Calendar / ToDo</Typography>
+            <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700 }}>애브리플랜</Typography>
             <Tabs value={tab} onChange={handleTabsChange} textColor="inherit" indicatorColor="secondary">
               <Tab label="ToDo" />
               <Tab label="Calendar" />

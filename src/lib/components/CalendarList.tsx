@@ -1,9 +1,8 @@
 import React from 'react'
 import { List, ListItem, ListItemText, Chip, Stack, Typography, Divider, Paper, IconButton } from '@mui/material'
-import EditIcon from '@mui/icons-material/Edit'
-import DeleteIcon from '@mui/icons-material/Delete'
 import dayjs from 'dayjs'
 import type { ScheduleListItem } from '../../ui/pages/calendar/types'
+import { CalendarListItemCard } from './CalendarListItemCard'
 
 export interface CalendarListProps {
 	items: ScheduleListItem[]
@@ -46,26 +45,7 @@ export function CalendarList({ items, groupByDate = true, onEdit, onDelete, onIt
 		return (
 			<Stack spacing={1}>
 				{items.map(it => (
-					<Paper key={it.id} variant="outlined" sx={{ p: 1.25 }} data-id={it.id} onClick={handleItemPaperClick}>
-						<Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={1}>
-							<Stack spacing={0.25} sx={{ minWidth: 0 }}>
-								<Typography variant="subtitle2" noWrap>{it.title}</Typography>
-								<Typography variant="caption" color="text.secondary">{formatTimeRange(it)}</Typography>
-								{it.description && (
-									<Typography variant="caption" color="text.secondary" sx={{ wordBreak: 'break-word' }}>{it.description}</Typography>
-								)}
-								{it.color && <Chip size="small" label={it.color} />}
-							</Stack>
-							<Stack direction="row" spacing={0.5}>
-								<IconButton size="small" color="primary" aria-label="수정" data-id={it.id} onClick={handleEditButtonClick}>
-									<EditIcon fontSize="small" />
-								</IconButton>
-								<IconButton size="small" color="secondary" aria-label="삭제" data-id={it.id} onClick={handleDeleteButtonClick}>
-									<DeleteIcon fontSize="small" />
-								</IconButton>
-							</Stack>
-						</Stack>
-					</Paper>
+					<CalendarListItemCard key={it.id} item={it} onClick={onItemClick} onEdit={onEdit} onDelete={onDelete} />
 				))}
 			</Stack>
 		)
@@ -85,34 +65,12 @@ export function CalendarList({ items, groupByDate = true, onEdit, onDelete, onIt
 			{keys.map((date, idx) => (
 				<React.Fragment key={date}>
 					<Stack spacing={0.5}>
-						<Stack direction="row" alignItems="center" spacing={1}>
-							<Typography variant="overline" color="text.secondary">DATE</Typography>
-							<Typography variant="subtitle2" sx={{ px: 1, py: 0.25, borderRadius: 1, bgcolor: 'primary.main', color: 'primary.contrastText' }}>
-								{dayjs(date).format('YYYY-MM-DD (dd)')}
-							</Typography>
-						</Stack>
+						<Typography variant="subtitle2" sx={{ px: 1, py: 0.25, borderRadius: 1, bgcolor: 'primary.main', color: 'primary.contrastText', display: 'inline-block', width: 'fit-content' }}>
+							{dayjs(date).format('YYYY-MM-DD (dd)')}
+						</Typography>
 						<Stack spacing={1}>
 							{grouped[date].map(it => (
-								<Paper key={it.id} variant="outlined" sx={{ p: 1.25 }} data-id={it.id} onClick={handleItemPaperClick}>
-									<Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={1}>
-										<Stack spacing={0.25} sx={{ minWidth: 0 }}>
-											<Typography variant="subtitle2" noWrap>{it.title}</Typography>
-											<Typography variant="caption" color="text.secondary">{formatTimeRange(it)}</Typography>
-											{it.description && (
-												<Typography variant="caption" color="text.secondary" sx={{ wordBreak: 'break-word' }}>{it.description}</Typography>
-											)}
-											{it.color && <Chip size="small" label={it.color} />}
-										</Stack>
-										<Stack direction="row" spacing={0.5}>
-											<IconButton size="small" color="primary" aria-label="수정" data-id={it.id} onClick={handleEditButtonClick}>
-												<EditIcon fontSize="small" />
-											</IconButton>
-											<IconButton size="small" color="secondary" aria-label="삭제" data-id={it.id} onClick={handleDeleteButtonClick}>
-												<DeleteIcon fontSize="small" />
-											</IconButton>
-										</Stack>
-									</Stack>
-								</Paper>
+								<CalendarListItemCard key={it.id} item={it} onClick={onItemClick} onEdit={onEdit} onDelete={onDelete} />
 							))}
 						</Stack>
 					</Stack>

@@ -27,6 +27,7 @@ export function CalendarPage() {
   const [pendingDelete, setPendingDelete] = useState<ScheduleListItem | null>(null)
   const pendingDeleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [query, setQuery] = useState('')
 
   function getRangeByView(base: Dayjs, mode: ViewMode): { start: string, end: string } {
     if (mode === 'day') {
@@ -65,6 +66,7 @@ export function CalendarPage() {
     })
     setListItems(flat)
   }
+  
 
   useEffect(() => {
     const { start, end } = getRangeByView(cursor, view)
@@ -194,6 +196,19 @@ export function CalendarPage() {
     return next
   }
 
+  const filteredItems = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return listItems
+    return listItems.filter(it =>
+      it.title.toLowerCase().includes(q) ||
+      (it.description?.toLowerCase().includes(q) ?? false)
+    )
+  }, [listItems, query])
+
+  function handleSearchInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setQuery(e.target.value)
+  }
+
   function handleSnackbarClose(_e?: React.SyntheticEvent | Event, reason?: string) {
     if (reason === 'clickaway') return
     setSnackbarOpen(false)
@@ -232,11 +247,18 @@ export function CalendarPage() {
             />
           </Stack>
           <Stack sx={{ flex: 1 }} spacing={2}>
+            <TextField
+              size="small"
+              placeholder="일정 검색"
+              value={query}
+              onChange={handleSearchInputChange}
+              fullWidth
+            />
             {isLoading ? (
               <CalendarListSkeleton count={8} />
             ) : (
               <CalendarList
-                items={listItems}
+                items={filteredItems}
                 groupByDate={true}
                 onEdit={handleListItemEdit}
                 onDelete={handleListItemDelete}
