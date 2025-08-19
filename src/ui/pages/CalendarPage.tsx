@@ -244,6 +244,7 @@ export function CalendarPage() {
               onDateChange={handleSidebarDateChange}
               onTodayClick={handleSidebarTodayClick}
               onAddClick={handleAddScheduleButtonClick}
+              onQuickCreated={handleDialogCreated}
             />
           </Stack>
           <Stack sx={{ flex: 1 }} spacing={2}>

@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
 import { Stack, TextField, Button } from '@mui/material'
-import { ColorPalettePicker } from './ColorPalettePicker'
 import { ScheduleApi, type ScheduleRequest, type ScheduleResponse } from '../api/schedule'
 
 export interface QuickAddScheduleProps {
@@ -11,7 +10,6 @@ export interface QuickAddScheduleProps {
 export function QuickAddSchedule({ defaultDate, onCreated }: QuickAddScheduleProps) {
 	const [title, setTitle] = useState('')
 	const [isSubmitting, setIsSubmitting] = useState(false)
-  const [color, setColor] = useState('')
 
 	function handleTitleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
 		setTitle(e.target.value)
@@ -20,12 +18,11 @@ export function QuickAddSchedule({ defaultDate, onCreated }: QuickAddSchedulePro
 	async function handleAddButtonClick() {
 		if (!title.trim() || isSubmitting) return
 		setIsSubmitting(true)
-		const payload: ScheduleRequest = { title: title.trim(), scheduleDate: defaultDate, color: color || undefined }
+		const payload: ScheduleRequest = { title: title.trim(), scheduleDate: defaultDate }
 		try {
 			const created = await ScheduleApi.create(payload)
 			onCreated(created)
 			setTitle('')
-			setColor('')
 		} finally {
 			setIsSubmitting(false)
 		}
@@ -49,7 +46,6 @@ export function QuickAddSchedule({ defaultDate, onCreated }: QuickAddSchedulePro
 				onKeyDown={handleTitleInputKeyDown}
 				disabled={isSubmitting}
 			/>
-			<ColorPalettePicker label="색상 선택" value={color} onChange={setColor} />
 			<Button onClick={handleAddButtonClick} disabled={isSubmitting || !title.trim()} variant="outlined">추가</Button>
 		</Stack>
 	)
