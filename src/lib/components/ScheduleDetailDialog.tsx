@@ -7,6 +7,9 @@ export interface ScheduleDetailDialogProps {
 	open: boolean
 	schedule: ScheduleListItem | null
 	onClose: () => void
+	onEdit?: (scheduleId: string) => void
+	onDelete?: (scheduleId: string) => void
+	onDuplicate?: (scheduleId: string) => void
 }
 
 function formatTime(schedule: ScheduleListItem | null): string {
@@ -17,8 +20,23 @@ function formatTime(schedule: ScheduleListItem | null): string {
 	return ''
 }
 
-export function ScheduleDetailDialog({ open, schedule, onClose }: ScheduleDetailDialogProps) {
+export function ScheduleDetailDialog({ open, schedule, onClose, onEdit, onDelete, onDuplicate }: ScheduleDetailDialogProps) {
 	function handleCloseButtonClick() { onClose() }
+
+	function handleEditButtonClick() {
+		if (schedule && onEdit) onEdit(schedule.id)
+		onClose()
+	}
+
+	function handleDeleteButtonClick() {
+		if (schedule && onDelete) onDelete(schedule.id)
+		onClose()
+	}
+
+	function handleDuplicateButtonClick() {
+		if (schedule && onDuplicate) onDuplicate(schedule.id)
+		onClose()
+	}
 
 	return (
 		<Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
@@ -37,7 +55,10 @@ export function ScheduleDetailDialog({ open, schedule, onClose }: ScheduleDetail
 				)}
 			</DialogContent>
 			<DialogActions>
-				<Button onClick={handleCloseButtonClick}>닫기</Button>
+				<Button color="inherit" onClick={handleCloseButtonClick}>닫기</Button>
+				<Button color="primary" onClick={handleEditButtonClick}>수정</Button>
+				<Button color="secondary" onClick={handleDuplicateButtonClick}>복제</Button>
+				<Button color="error" onClick={handleDeleteButtonClick}>삭제</Button>
 			</DialogActions>
 		</Dialog>
 	)
