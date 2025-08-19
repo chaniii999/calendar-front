@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Stack, Switch, TextField } from '@mui/material'
+import { ColorPalettePicker } from './ColorPalettePicker'
 import dayjs from 'dayjs'
 import { ScheduleApi, ScheduleRequest, ScheduleResponse } from '../api/schedule'
 
@@ -16,9 +17,11 @@ export function ScheduleCreateDialog({ open, defaultDate, onClose, onCreated }: 
   const [allDay, setAllDay] = useState(false)
   const [startTime, setStartTime] = useState('')
   const [endTime, setEndTime] = useState('')
+  const [color, setColor] = useState<string>('')
 
   const handleTitleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)
   const handleDescriptionInputChange = (e: React.ChangeEvent<HTMLInputElement>) => setDesc(e.target.value)
+  const handleColorInputChange = (e: React.ChangeEvent<HTMLInputElement>) => setColor(e.target.value)
   const handleCancelButtonClick = () => onClose()
   const handleCreateButtonClick = async () => {
     if (!title.trim()) return
@@ -29,11 +32,13 @@ export function ScheduleCreateDialog({ open, defaultDate, onClose, onCreated }: 
       isAllDay: allDay || undefined,
       startTime: startTime || undefined,
       endTime: endTime || undefined,
+      color: color || undefined,
     }
     const created = await ScheduleApi.create(payload)
     onCreated(created)
     setTitle('')
     setDesc('')
+    setColor('')
     onClose()
   }
 
@@ -44,6 +49,7 @@ export function ScheduleCreateDialog({ open, defaultDate, onClose, onCreated }: 
         <Stack spacing={2} sx={{ mt: 1 }}>
           <TextField label="제목" value={title} onChange={handleTitleInputChange} autoFocus fullWidth size="small" />
           <TextField label="설명" value={desc} onChange={handleDescriptionInputChange} fullWidth size="small" />
+          <ColorPalettePicker label="색상 선택" value={color} onChange={setColor} />
           <FormControlLabel control={<Switch checked={allDay} onChange={(_, v)=>setAllDay(v)} />} label="종일" />
           {!allDay && (
             <Stack direction="row" spacing={1}>

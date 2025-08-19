@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Stack, Switch, TextField } from '@mui/material'
+import { ColorPalettePicker } from './ColorPalettePicker'
 import dayjs from 'dayjs'
 import { ScheduleApi, type ScheduleRequest, type ScheduleResponse } from '../api/schedule'
 
@@ -27,6 +28,7 @@ export function ScheduleEditDialog({ open, schedule, onClose, onUpdated }: Sched
   const [allDay, setAllDay] = useState(false)
   const [startTime, setStartTime] = useState('')
   const [endTime, setEndTime] = useState('')
+  const [color, setColor] = useState<string>('')
 
   useEffect(() => {
     if (!schedule) return
@@ -35,6 +37,7 @@ export function ScheduleEditDialog({ open, schedule, onClose, onUpdated }: Sched
     setAllDay(Boolean(schedule.isAllDay))
     setStartTime(schedule.startTime ?? '')
     setEndTime(schedule.endTime ?? '')
+    setColor(schedule.color ?? '')
   }, [schedule])
 
   function handleTitleInputChange(e: React.ChangeEvent<HTMLInputElement>) { setTitle(e.target.value) }
@@ -42,6 +45,7 @@ export function ScheduleEditDialog({ open, schedule, onClose, onUpdated }: Sched
   function handleAllDaySwitchChange(_e: React.ChangeEvent<HTMLInputElement>, value: boolean) { setAllDay(value) }
   function handleStartTimeInputChange(e: React.ChangeEvent<HTMLInputElement>) { setStartTime(e.target.value) }
   function handleEndTimeInputChange(e: React.ChangeEvent<HTMLInputElement>) { setEndTime(e.target.value) }
+  function handleColorInputChange(e: React.ChangeEvent<HTMLInputElement>) { setColor(e.target.value) }
   function handleCancelButtonClick() { onClose() }
 
   async function handleSaveButtonClick() {
@@ -55,6 +59,7 @@ export function ScheduleEditDialog({ open, schedule, onClose, onUpdated }: Sched
       startTime: allDay ? undefined : (startTime || undefined),
       endTime: allDay ? undefined : (endTime || undefined),
       color: schedule.color,
+      color: color || undefined,
     }
     const updated = await ScheduleApi.update(schedule.id, payload)
     onUpdated(updated)
@@ -68,6 +73,7 @@ export function ScheduleEditDialog({ open, schedule, onClose, onUpdated }: Sched
         <Stack spacing={2} sx={{ mt: 1 }}>
           <TextField label="제목" value={title} onChange={handleTitleInputChange} autoFocus fullWidth size="small" />
           <TextField label="설명" value={desc} onChange={handleDescriptionInputChange} fullWidth size="small" />
+          <ColorPalettePicker label="색상 선택" value={color} onChange={setColor} />
           <FormControlLabel control={<Switch checked={allDay} onChange={handleAllDaySwitchChange} />} label="종일" />
           {!allDay && (
             <Stack direction="row" spacing={1}>
