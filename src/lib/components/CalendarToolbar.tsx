@@ -2,6 +2,7 @@ import React from 'react'
 import { Stack, ToggleButton, ToggleButtonGroup, Typography, Button, IconButton } from '@mui/material'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import AddIcon from '@mui/icons-material/Add'
 import dayjs from 'dayjs'
 
 export type ViewMode = 'month' | 'week' | 'day'
@@ -36,7 +37,9 @@ export function CalendarToolbar({ cursor, view, onViewChange, onPrev, onNext, on
           <ToggleButton value="week">주</ToggleButton>
           <ToggleButton value="day">일</ToggleButton>
         </ToggleButtonGroup>
-        <Button variant="contained" onClick={handleAddButtonClick}>일정 추가</Button>
+        <IconButton color="primary" onClick={handleAddButtonClick} size="small" aria-label="일정 추가">
+          <AddIcon />
+        </IconButton>
       </Stack>
     </Stack>
   )

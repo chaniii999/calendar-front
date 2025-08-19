@@ -10,6 +10,7 @@ export interface CalendarListProps {
 	groupByDate?: boolean
 	onEdit?: (scheduleId: string) => void
 	onDelete?: (scheduleId: string) => void
+	onItemClick?: (scheduleId: string) => void
 }
 
 function formatTimeRange(item: ScheduleListItem): string {
@@ -19,26 +20,33 @@ function formatTimeRange(item: ScheduleListItem): string {
 	return ''
 }
 
-export function CalendarList({ items, groupByDate = true, onEdit, onDelete }: CalendarListProps) {
+export function CalendarList({ items, groupByDate = true, onEdit, onDelete, onItemClick }: CalendarListProps) {
 	if (!items.length) {
 		return <Typography variant="body2" color="text.secondary">표시할 일정이 없습니다.</Typography>
 	}
 
 	function handleEditButtonClick(e: React.MouseEvent<HTMLButtonElement>) {
+		e.stopPropagation()
 		const id = e.currentTarget.getAttribute('data-id')
 		if (id && onEdit) onEdit(id)
 	}
 
 	function handleDeleteButtonClick(e: React.MouseEvent<HTMLButtonElement>) {
+		e.stopPropagation()
 		const id = e.currentTarget.getAttribute('data-id')
 		if (id && onDelete) onDelete(id)
+	}
+
+	function handleItemPaperClick(e: React.MouseEvent<HTMLDivElement>) {
+		const id = e.currentTarget.getAttribute('data-id')
+		if (id && onItemClick) onItemClick(id)
 	}
 
 	if (!groupByDate) {
 		return (
 			<Stack spacing={1}>
 				{items.map(it => (
-					<Paper key={it.id} variant="outlined" sx={{ p: 1.25 }}>
+					<Paper key={it.id} variant="outlined" sx={{ p: 1.25 }} data-id={it.id} onClick={handleItemPaperClick}>
 						<Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={1}>
 							<Stack spacing={0.25} sx={{ minWidth: 0 }}>
 								<Typography variant="subtitle2" noWrap>{it.title}</Typography>
@@ -77,10 +85,15 @@ export function CalendarList({ items, groupByDate = true, onEdit, onDelete }: Ca
 			{keys.map((date, idx) => (
 				<React.Fragment key={date}>
 					<Stack spacing={0.5}>
-						<Typography variant="subtitle2">{dayjs(date).format('YYYY-MM-DD (dd)')}</Typography>
+						<Stack direction="row" alignItems="center" spacing={1}>
+							<Typography variant="overline" color="text.secondary">DATE</Typography>
+							<Typography variant="subtitle2" sx={{ px: 1, py: 0.25, borderRadius: 1, bgcolor: 'primary.main', color: 'primary.contrastText' }}>
+								{dayjs(date).format('YYYY-MM-DD (dd)')}
+							</Typography>
+						</Stack>
 						<Stack spacing={1}>
 							{grouped[date].map(it => (
-								<Paper key={it.id} variant="outlined" sx={{ p: 1.25 }}>
+								<Paper key={it.id} variant="outlined" sx={{ p: 1.25 }} data-id={it.id} onClick={handleItemPaperClick}>
 									<Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={1}>
 										<Stack spacing={0.25} sx={{ minWidth: 0 }}>
 											<Typography variant="subtitle2" noWrap>{it.title}</Typography>

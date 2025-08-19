@@ -7,6 +7,7 @@ import { ScheduleApi, ScheduleRequest, ScheduleResponse } from '../../lib/api/sc
 import { CalendarToolbar, type ViewMode } from '../../lib/components/CalendarToolbar'
 import { ScheduleCreateDialog } from '../../lib/components/ScheduleCreateDialog'
 import { ScheduleEditDialog } from '../../lib/components/ScheduleEditDialog'
+import { ScheduleDetailDialog } from '../../lib/components/ScheduleDetailDialog'
 import { CalendarList } from '../../lib/components/CalendarList'
 import { CalendarSidebar } from '../../lib/components/CalendarSidebar'
 import type { ScheduleListItem } from './calendar/types'
@@ -18,6 +19,8 @@ export function CalendarPage() {
   const [listItems, setListItems] = useState<ScheduleListItem[]>([])
   const [editTarget, setEditTarget] = useState<ScheduleListItem | null>(null)
   const [editOpen, setEditOpen] = useState(false)
+  const [detailTarget, setDetailTarget] = useState<ScheduleListItem | null>(null)
+  const [detailOpen, setDetailOpen] = useState(false)
 
   function getRangeByView(base: Dayjs, mode: ViewMode): { start: string, end: string } {
     if (mode === 'day') {
@@ -95,6 +98,12 @@ export function CalendarPage() {
       description: item.description,
     } : it))
   }
+  const handleListItemClick = (scheduleId: string) => {
+    const target = listItems.find(it => it.id === scheduleId) || null
+    setDetailTarget(target)
+    setDetailOpen(Boolean(target))
+  }
+  const handleDetailDialogClose = () => setDetailOpen(false)
   const handleDialogCreated = (item: ScheduleResponse) => {
     setListItems(prev => [{
       id: item.id,
@@ -125,6 +134,7 @@ export function CalendarPage() {
               cursor={cursor}
               onDateChange={handleSidebarDateChange}
               onTodayClick={handleSidebarTodayClick}
+              onAddClick={handleAddScheduleButtonClick}
             />
           </Stack>
           <Stack sx={{ flex: 1 }} spacing={2}>
@@ -133,12 +143,14 @@ export function CalendarPage() {
               groupByDate={true}
               onEdit={handleListItemEdit}
               onDelete={handleListItemDelete}
+              onItemClick={handleListItemClick}
             />
           </Stack>
         </Stack>
       </Stack>
       <ScheduleCreateDialog open={dialogOpen} defaultDate={cursor.format('YYYY-MM-DD')} onClose={handleDialogClose} onCreated={handleDialogCreated} />
       <ScheduleEditDialog open={editOpen} schedule={editTarget} onClose={handleEditDialogClose} onUpdated={handleEditDialogUpdated} />
+      <ScheduleDetailDialog open={detailOpen} schedule={detailTarget} onClose={handleDetailDialogClose} />
     </LocalizationProvider>
   )
 }
