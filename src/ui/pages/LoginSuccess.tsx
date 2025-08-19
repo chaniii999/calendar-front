@@ -11,7 +11,7 @@ export default function LoginSuccess() {
     if (accessToken && refreshToken) {
       setTokens(accessToken, refreshToken)
       saveTokensToStorage(accessToken, refreshToken)
-      window.location.replace('/')
+      window.location.replace('/calendar')
     }
   }, [])
   return (
