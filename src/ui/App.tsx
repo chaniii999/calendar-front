@@ -67,30 +67,8 @@ export default function App() {
     }
 
     setTokens(tokens.accessToken, tokens.refreshToken)
-
-    ;(async () => {
-      try {
-        const res = await fetch('/api/auth/refresh', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken: tokens.refreshToken }),
-        })
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`)
-        }
-        const body = await res.json() as { ok: boolean, data: { accessToken: string, refreshToken: string } }
-        const next = body.data
-        setTokens(next.accessToken, next.refreshToken)
-        saveTokensToStorage(next.accessToken, next.refreshToken)
-        setIsAuthed(true)
-      } catch (_e) {
-        clearAuthTokens()
-        clearTokensFromStorage()
-        setIsAuthed(false)
-      } finally {
-        setIsAuthChecking(false)
-      }
-    })()
+    setIsAuthed(true)
+    setIsAuthChecking(false)
   }
 
   useEffect(handleAppInitValidateAuth, [])

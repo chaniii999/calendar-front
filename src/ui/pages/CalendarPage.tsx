@@ -11,7 +11,7 @@ import { ScheduleDetailDialog } from '../../lib/components/ScheduleDetailDialog'
 import { CalendarList } from '../../lib/components/CalendarList'
 import { CalendarSidebar } from '../../lib/components/CalendarSidebar'
 import { CalendarListSkeleton } from '../../lib/components/CalendarListSkeleton'
-import { PushControls } from '../../lib/components/PushControls'
+import { PushToggle } from '../../lib/components/PushToggle'
 import type { ScheduleListItem } from './calendar/types'
 import { getExistingSubscription, subscribePush, unsubscribePush } from '../../lib/notifications/registerPush'
 
@@ -289,7 +289,10 @@ export function CalendarPage() {
               onChange={handleSearchInputChange}
               fullWidth
             />
-            <PushControls isEnabled={isPushEnabled} onSubscribe={handlePushSubscribeButtonClick} onUnsubscribe={handlePushUnsubscribeButtonClick} />
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Typography variant="body2" color="text.secondary">푸시 알림</Typography>
+              <PushToggle isEnabled={isPushEnabled} onToggle={isPushEnabled ? handlePushUnsubscribeButtonClick : handlePushSubscribeButtonClick} />
+            </Stack>
             {isLoading ? (
               <CalendarListSkeleton count={8} />
             ) : (
