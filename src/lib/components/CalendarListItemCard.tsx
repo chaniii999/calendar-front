@@ -57,7 +57,6 @@ export function CalendarListItemCard({ item, onClick, onEdit, onDelete, showDate
 							<Chip label={dayjs(item.scheduleDate).format('YYYY-MM-DD (dd)')} size="small" />
 						)}
 						{timeText && <Chip label={timeText} size="small" variant="outlined" />}
-						{item.color && <Chip label={item.color} size="small" variant="outlined" />}
 					</Stack>
 					{item.description && (
 						<Typography variant="body2" color="text.secondary" sx={{ wordBreak: 'break-word' }}>

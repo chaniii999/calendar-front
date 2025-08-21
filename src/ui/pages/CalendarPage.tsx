@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Box, Button, Card, CardContent, Snackbar, Stack, TextField, Typography } from '@mui/material'
+import { Button, Snackbar, Stack, TextField, Typography } from '@mui/material'
 import { LocalizationProvider } from '@mui/x-date-pickers'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import dayjs, { Dayjs } from 'dayjs'
@@ -11,9 +11,9 @@ import { ScheduleDetailDialog } from '../../lib/components/ScheduleDetailDialog'
 import { CalendarList } from '../../lib/components/CalendarList'
 import { CalendarSidebar } from '../../lib/components/CalendarSidebar'
 import { CalendarListSkeleton } from '../../lib/components/CalendarListSkeleton'
-import { PushToggle } from '../../lib/components/PushToggle'
 import type { ScheduleListItem } from './calendar/types'
-import { getExistingSubscription, subscribePush, unsubscribePush } from '../../lib/notifications/registerPush'
+import { useNotificationsSSE } from '../../lib/sse/useNotificationsSSE'
+import type { ReminderEventPayload } from '../../lib/sse/types'
 
 export function CalendarPage() {
   const [cursor, setCursor] = useState<Dayjs>(dayjs())
@@ -30,7 +30,17 @@ export function CalendarPage() {
   const pendingDeleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [query, setQuery] = useState('')
-  const [isPushEnabled, setIsPushEnabled] = useState(false)
+
+  function handleReminderEvent(payload: ReminderEventPayload) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      try {
+        new Notification(payload.title || '일정 알림', { body: payload.message })
+      } catch (_e) {}
+    }
+  }
+
+  // 로그인 완료 후에만 실행: 토큰은 App 초기화에서 설정됨
+  useNotificationsSSE({ handleReminderEvent })
 
   function getRangeByView(base: Dayjs, mode: ViewMode): { start: string, end: string } {
     if (mode === 'day') {
@@ -79,12 +89,7 @@ export function CalendarPage() {
       .finally(() => setIsLoading(false))
   }, [cursor, view])
 
-  useEffect(() => {
-    ;(async () => {
-      const sub = await getExistingSubscription()
-      setIsPushEnabled(Boolean(sub))
-    })()
-  }, [])
+  
 
   const handlePrevMonthButtonClick = () => setCursor(prev => prev.add(-1, 'month'))
   const handleNextMonthButtonClick = () => setCursor(prev => prev.add(1, 'month'))
@@ -194,29 +199,7 @@ export function CalendarPage() {
     }, ...prev])
   }
 
-  async function handlePushSubscribeButtonClick() {
-    const sub = await subscribePush()
-    if (sub) {
-      setIsPushEnabled(true)
-      setSnackbarMessage('푸시 알림이 활성화되었습니다')
-      setSnackbarOpen(true)
-    } else {
-      setSnackbarMessage('푸시 알림 활성화에 실패했습니다')
-      setSnackbarOpen(true)
-    }
-  }
-
-  async function handlePushUnsubscribeButtonClick() {
-    const ok = await unsubscribePush()
-    if (ok) {
-      setIsPushEnabled(false)
-      setSnackbarMessage('푸시 알림이 비활성화되었습니다')
-      setSnackbarOpen(true)
-    } else {
-      setSnackbarMessage('푸시 알림 비활성화에 실패했습니다')
-      setSnackbarOpen(true)
-    }
-  }
+  
 
   function sortListItems(items: ScheduleListItem[]): ScheduleListItem[] {
     const next = [ ...items ]
@@ -289,10 +272,7 @@ export function CalendarPage() {
               onChange={handleSearchInputChange}
               fullWidth
             />
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <Typography variant="body2" color="text.secondary">푸시 알림</Typography>
-              <PushToggle isEnabled={isPushEnabled} onToggle={isPushEnabled ? handlePushUnsubscribeButtonClick : handlePushSubscribeButtonClick} />
-            </Stack>
+            
             {isLoading ? (
               <CalendarListSkeleton count={8} />
             ) : (

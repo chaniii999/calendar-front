@@ -10,10 +10,4 @@ export interface ScheduleListItem {
 }
 
 
-export interface PushSubscriptionInfo {
-	endpoint: string
-	p256dh: string
-	auth: string
-}
-
-
+// PushSubscriptionInfo removed as push domain is deprecated

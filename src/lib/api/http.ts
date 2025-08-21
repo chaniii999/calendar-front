@@ -1,5 +1,6 @@
 let accessToken: string | null = null
 let refreshToken: string | null = null
+import { clearTokensFromStorage } from '../auth/session'
 
 export function setTokens(nextAccessToken: string, nextRefreshToken: string) {
   accessToken = nextAccessToken
@@ -27,6 +28,18 @@ export async function http<T>(input: RequestInfo, init?: RequestInit): Promise<T
       if (!retry.ok) throw new Error(`HTTP ${retry.status}`)
       return retry.json()
     }
+    // refresh 실패 시 즉시 로그아웃 및 로그인화면 이동
+    clearAuthTokens()
+    clearTokensFromStorage()
+    window.location.replace('/')
+    throw new Error('Unauthorized')
+  }
+  if (res.status === 401) {
+    // refresh 토큰 없고 401이면 즉시 로그아웃 및 로그인화면 이동
+    clearAuthTokens()
+    clearTokensFromStorage()
+    window.location.replace('/')
+    throw new Error('Unauthorized')
   }
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   return res.json()
