@@ -1,5 +1,5 @@
 import React from 'react'
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Stack, Typography, Chip } from '@mui/material'
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Stack, Typography } from '@mui/material'
 import dayjs from 'dayjs'
 import type { ScheduleListItem } from '../../ui/pages/calendar/types'
 
@@ -50,15 +50,15 @@ export function ScheduleDetailDialog({ open, schedule, onClose, onEdit, onDelete
 						{schedule.description && (
 							<Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{schedule.description}</Typography>
 						)}
-						{schedule.color && <Chip label={schedule.color} size="small" />}
+						{/* 색상 텍스트 표시는 제거 */}
 					</Stack>
 				)}
 			</DialogContent>
 			<DialogActions>
-				<Button color="inherit" onClick={handleCloseButtonClick}>닫기</Button>
 				<Button color="primary" onClick={handleEditButtonClick}>수정</Button>
 				<Button color="secondary" onClick={handleDuplicateButtonClick}>복제</Button>
 				<Button color="error" onClick={handleDeleteButtonClick}>삭제</Button>
+				<Button color="inherit" onClick={handleCloseButtonClick}>닫기</Button>
 			</DialogActions>
 		</Dialog>
 	)

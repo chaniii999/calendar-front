@@ -11,7 +11,9 @@ import { ScheduleDetailDialog } from '../../lib/components/ScheduleDetailDialog'
 import { CalendarList } from '../../lib/components/CalendarList'
 import { CalendarSidebar } from '../../lib/components/CalendarSidebar'
 import { CalendarListSkeleton } from '../../lib/components/CalendarListSkeleton'
+import { PushControls } from '../../lib/components/PushControls'
 import type { ScheduleListItem } from './calendar/types'
+import { getExistingSubscription, subscribePush, unsubscribePush } from '../../lib/notifications/registerPush'
 
 export function CalendarPage() {
   const [cursor, setCursor] = useState<Dayjs>(dayjs())
@@ -28,6 +30,7 @@ export function CalendarPage() {
   const pendingDeleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [query, setQuery] = useState('')
+  const [isPushEnabled, setIsPushEnabled] = useState(false)
 
   function getRangeByView(base: Dayjs, mode: ViewMode): { start: string, end: string } {
     if (mode === 'day') {
@@ -75,6 +78,13 @@ export function CalendarPage() {
       .then(handleBuildStateFromSchedules)
       .finally(() => setIsLoading(false))
   }, [cursor, view])
+
+  useEffect(() => {
+    ;(async () => {
+      const sub = await getExistingSubscription()
+      setIsPushEnabled(Boolean(sub))
+    })()
+  }, [])
 
   const handlePrevMonthButtonClick = () => setCursor(prev => prev.add(-1, 'month'))
   const handleNextMonthButtonClick = () => setCursor(prev => prev.add(1, 'month'))
@@ -184,6 +194,30 @@ export function CalendarPage() {
     }, ...prev])
   }
 
+  async function handlePushSubscribeButtonClick() {
+    const sub = await subscribePush()
+    if (sub) {
+      setIsPushEnabled(true)
+      setSnackbarMessage('푸시 알림이 활성화되었습니다')
+      setSnackbarOpen(true)
+    } else {
+      setSnackbarMessage('푸시 알림 활성화에 실패했습니다')
+      setSnackbarOpen(true)
+    }
+  }
+
+  async function handlePushUnsubscribeButtonClick() {
+    const ok = await unsubscribePush()
+    if (ok) {
+      setIsPushEnabled(false)
+      setSnackbarMessage('푸시 알림이 비활성화되었습니다')
+      setSnackbarOpen(true)
+    } else {
+      setSnackbarMessage('푸시 알림 비활성화에 실패했습니다')
+      setSnackbarOpen(true)
+    }
+  }
+
   function sortListItems(items: ScheduleListItem[]): ScheduleListItem[] {
     const next = [ ...items ]
     next.sort((a, b) => {
@@ -255,6 +289,7 @@ export function CalendarPage() {
               onChange={handleSearchInputChange}
               fullWidth
             />
+            <PushControls isEnabled={isPushEnabled} onSubscribe={handlePushSubscribeButtonClick} onUnsubscribe={handlePushUnsubscribeButtonClick} />
             {isLoading ? (
               <CalendarListSkeleton count={8} />
             ) : (
