@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { AppBar, Avatar, Box, Button, Container, Divider, Paper, Tab, Tabs, Toolbar, Typography } from '@mui/material'
 import { BrowserRouter, Route, Routes, useNavigate, useLocation, Navigate } from 'react-router-dom'
-import { TodoPage } from './pages/TodoPage'
 import { CalendarPage } from './pages/CalendarPage'
 import LoginSuccess from './pages/LoginSuccess'
 import { readTokensFromStorage, clearTokensFromStorage, saveTokensToStorage } from '../lib/auth/session'
@@ -14,20 +13,12 @@ function NavTabs() {
 
   function handleTabsChange(_e: unknown, newValue: number) {
     setTab(newValue)
-    navigate(newValue === 0 ? '/todo' : '/calendar')
+    navigate('/calendar')
   }
 
   useEffect(() => {
-    if (location.pathname.startsWith('/calendar')) {
-      setTab(1)
-      return
-    }
-    if (location.pathname.startsWith('/todo')) {
-      setTab(0)
-      return
-    }
-    // 그 외 경로는 캘린더를 기본으로 선택
-    setTab(1)
+    // 캘린더만 사용
+    setTab(0)
   }, [location.pathname])
   const tokens = readTokensFromStorage()
   const isAuthed = Boolean(tokens.accessToken && tokens.refreshToken)
@@ -47,7 +38,6 @@ function NavTabs() {
             <Avatar sx={{ width: 28, height: 28, bgcolor: 'primary.main' }}>C</Avatar>
             <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700 }}>애브리플랜</Typography>
             <Tabs value={tab} onChange={handleTabsChange} textColor="inherit" indicatorColor="secondary">
-              <Tab label="ToDo" />
               <Tab label="Calendar" />
             </Tabs>
             {isAuthed ? (
@@ -116,7 +106,6 @@ export default function App() {
         ) : (
           <Routes>
             <Route path="/" element={<Navigate to="/calendar" replace />} />
-            <Route path="/todo" element={isAuthed ? <TodoPage /> : <LoginGate />} />
             <Route path="/calendar" element={isAuthed ? <CalendarPage /> : <LoginGate />} />
             <Route path="/login/success" element={<LoginSuccess />} />
           </Routes>
