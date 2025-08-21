@@ -10,4 +10,8 @@ export const notificationEndpoints: NotificationEndpointsConfig = {
 	unsubscribePath: import.meta.env.VITE_PUSH_UNSUBSCRIBE_PATH || '/api/notifications/unsubscribe',
 }
 
+export const notificationConfig = {
+	publicKeyOverride: (import.meta.env.VITE_PUSH_PUBLIC_KEY as string | undefined) || undefined,
+}
+
 

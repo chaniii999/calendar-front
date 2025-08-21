@@ -12,8 +12,12 @@ export interface SaveSubscriptionRequest {
 
 export const NotificationApi = {
 	async getVapidPublicKey(): Promise<string> {
-		const res = await http<{ success: boolean, data: PushPublicKeyResponse }>(notificationEndpoints.publicKeyPath)
-		return res.data.publicKey
+		const res = await http<unknown>(notificationEndpoints.publicKeyPath)
+		const key = extractPublicKey(res)
+		if (!key) {
+			throw new Error('Invalid public key response')
+		}
+		return key
 	},
 	async saveSubscription(subscription: PushSubscription): Promise<void> {
 		const payload: SaveSubscriptionRequest = {
@@ -23,17 +27,31 @@ export const NotificationApi = {
 				auth: arrayBufferToBase64Url(subscription.getKey('auth')),
 			},
 		}
-		await http<{ success: boolean, data: null }>(notificationEndpoints.subscribePath, {
+		await http<unknown>(notificationEndpoints.subscribePath, {
 			method: 'POST',
 			body: JSON.stringify(payload),
 		})
 	},
 	async deleteSubscription(endpoint: string): Promise<void> {
-		await http<{ success: boolean, data: null }>(notificationEndpoints.unsubscribePath, {
+		await http<unknown>(notificationEndpoints.unsubscribePath, {
 			method: 'POST',
 			body: JSON.stringify({ endpoint }),
 		})
 	}
+}
+
+function extractPublicKey(res: unknown): string | null {
+	// 허용 포맷:
+	// 1) { success: true, data: { publicKey: '...' } }
+	// 2) { publicKey: '...' }
+	// 3) '...'(그 자체)
+	if (typeof res === 'string') return res
+	if (res && typeof res === 'object') {
+		const obj = res as Record<string, unknown>
+		if (typeof obj.publicKey === 'string') return obj.publicKey
+		if (obj.data && typeof (obj as any).data.publicKey === 'string') return (obj as any).data.publicKey
+	}
+	return null
 }
 
 function arrayBufferToBase64Url(buf: ArrayBuffer | null): string {

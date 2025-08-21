@@ -1,4 +1,5 @@
 import { NotificationApi } from '../api/notification'
+import { notificationConfig } from './config'
 
 export async function ensureServiceWorkerRegistered(): Promise<ServiceWorkerRegistration | null> {
 	if (!('serviceWorker' in navigator)) return null
@@ -23,7 +24,7 @@ export async function subscribePush(): Promise<PushSubscription | null> {
 	const permission = await requestNotificationPermission()
 	if (permission !== 'granted') return null
 	try {
-		const key = await NotificationApi.getVapidPublicKey()
+		const key = notificationConfig.publicKeyOverride || await NotificationApi.getVapidPublicKey()
 		const sub = await reg.pushManager.subscribe({
 			userVisibleOnly: true,
 			applicationServerKey: urlBase64ToUint8Array(key),
