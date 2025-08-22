@@ -7,6 +7,8 @@ export interface ScheduleListItem {
 	color?: string
 	isAllDay?: boolean
 	description?: string
+	reminderMinutes?: number
+	isReminderEnabled?: boolean
 }
 
 

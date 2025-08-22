@@ -40,6 +40,11 @@ export interface ScheduleResponse {
   updatedAt: string
 }
 
+export interface ToggleReminderResponse {
+  scheduleId: string
+  enabled: boolean
+}
+
 export const ScheduleApi = {
   async getRange(startDate: string, endDate: string): Promise<ScheduleResponse[]> {
     const url = `/api/schedule/range?startDate=${startDate}&endDate=${endDate}`
@@ -67,6 +72,24 @@ export const ScheduleApi = {
   async remove(scheduleId: string): Promise<void> {
     const res = await http<CommonResponse<void>>(`/api/schedule/${scheduleId}`, {
       method: 'DELETE'
+    })
+    return res.data
+  },
+  async setReminderEnabled(scheduleId: string, enabled: boolean): Promise<ScheduleResponse> {
+    const res = await http<CommonResponse<ScheduleResponse>>(`/api/schedule/${scheduleId}/reminder-enabled?enabled=${enabled ? 'true' : 'false'}`, {
+      method: 'PUT',
+    })
+    return res.data
+  },
+  async triggerStart(scheduleId: string): Promise<ScheduleResponse> {
+    const res = await http<CommonResponse<ScheduleResponse>>(`/api/schedule/${scheduleId}/trigger-start`, {
+      method: 'POST',
+    })
+    return res.data
+  },
+  async toggleReminderEnabled(scheduleId: string): Promise<ToggleReminderResponse> {
+    const res = await http<CommonResponse<ToggleReminderResponse>>(`/api/schedule/${scheduleId}/reminder-enabled/toggle`, {
+      method: 'POST',
     })
     return res.data
   },

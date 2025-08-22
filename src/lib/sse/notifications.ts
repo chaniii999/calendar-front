@@ -62,7 +62,7 @@ export function startNotificationsSSE(
 
 		target.onopen = onOpen
 		target.onerror = onError
-		target.addEventListener('reminder', onReminder)
+		target.addEventListener('schedule-reminder', onReminder)
 		target.addEventListener('test', onTest)
 	}
 

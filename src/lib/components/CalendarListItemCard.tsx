@@ -1,5 +1,5 @@
 import React from 'react'
-import { Paper, Stack, Typography, Chip, IconButton } from '@mui/material'
+import { Paper, Stack, Typography, Chip, IconButton, Switch, Tooltip } from '@mui/material'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import dayjs from 'dayjs'
@@ -11,6 +11,7 @@ export interface CalendarListItemCardProps {
 	onEdit?: (scheduleId: string) => void
 	onDelete?: (scheduleId: string) => void
 	showDateChip?: boolean
+	onToggleReminder?: (scheduleId: string, enabled: boolean) => void
 }
 
 function buildTimeText(item: ScheduleListItem): string {
@@ -20,7 +21,7 @@ function buildTimeText(item: ScheduleListItem): string {
 	return ''
 }
 
-export function CalendarListItemCard({ item, onClick, onEdit, onDelete, showDateChip }: CalendarListItemCardProps) {
+export function CalendarListItemCard({ item, onClick, onEdit, onDelete, showDateChip, onToggleReminder }: CalendarListItemCardProps) {
 	function handleRootClick() {
 		if (onClick) onClick(item.id)
 	}
@@ -31,6 +32,14 @@ export function CalendarListItemCard({ item, onClick, onEdit, onDelete, showDate
 	function handleDeleteClick(e: React.MouseEvent<HTMLButtonElement>) {
 		e.stopPropagation()
 		if (onDelete) onDelete(item.id)
+	}
+
+	function handleReminderSwitchClick(e: React.MouseEvent) {
+		e.stopPropagation()
+	}
+
+	function handleReminderToggleChange(_e: React.ChangeEvent<HTMLInputElement>, checked: boolean) {
+		if (onToggleReminder) onToggleReminder(item.id, checked)
 	}
 
 	const timeText = buildTimeText(item)
@@ -64,7 +73,17 @@ export function CalendarListItemCard({ item, onClick, onEdit, onDelete, showDate
 						</Typography>
 					)}
 				</Stack>
-				<Stack direction="row" spacing={0.5}>
+				<Stack direction="row" spacing={0.5} alignItems="center">
+					{item.startTime && (
+						<Tooltip title={item.isReminderEnabled ? '알림 켜짐' : '알림 꺼짐'}>
+							<Switch
+								size="small"
+								checked={Boolean(item.isReminderEnabled)}
+								onChange={handleReminderToggleChange}
+								onClick={handleReminderSwitchClick}
+							/>
+						</Tooltip>
+					)}
 					<IconButton size="small" color="primary" aria-label="수정" onClick={handleEditClick}>
 						<EditIcon fontSize="small" />
 					</IconButton>

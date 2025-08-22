@@ -1,8 +1,11 @@
 export interface ReminderEventPayload {
 	scheduleId: string
 	title: string
-	message: string
-	triggerAtEpochMs: number
+	scheduleDate?: string
+	startTime?: string
+	isAllDay?: boolean
+	message?: string
+	triggerAtEpochMs?: number
 }
 
 export interface TestEventPayload {

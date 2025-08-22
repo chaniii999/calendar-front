@@ -31,6 +31,13 @@ export function CalendarPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [query, setQuery] = useState('')
 
+  function normalizeEnabled(value: unknown): boolean {
+    if (typeof value === 'boolean') return value
+    if (typeof value === 'number') return value !== 0
+    if (typeof value === 'string') return value.toLowerCase() === 'true' || value === '1'
+    return false
+  }
+
   function handleReminderEvent(payload: ReminderEventPayload) {
     if ('Notification' in window && Notification.permission === 'granted') {
       try {
@@ -69,6 +76,8 @@ export function CalendarPage() {
       color: it.color,
       isAllDay: it.isAllDay,
       description: it.description,
+      isReminderEnabled: normalizeEnabled((it as any).isReminderEnabled ?? (it as any).reminderEnabled),
+      reminderMinutes: it.reminderMinutes,
     }))
     flat.sort((a, b) => {
       if (a.scheduleDate !== b.scheduleDate) return a.scheduleDate < b.scheduleDate ? -1 : 1
@@ -146,6 +155,8 @@ export function CalendarPage() {
       color: item.color,
       isAllDay: item.isAllDay,
       description: item.description,
+      isReminderEnabled: item.isReminderEnabled,
+      reminderMinutes: item.reminderMinutes,
     } : it))
   }
   const handleListItemClick = (scheduleId: string) => {
@@ -196,7 +207,32 @@ export function CalendarPage() {
       color: item.color,
       isAllDay: item.isAllDay,
       description: item.description,
+      isReminderEnabled: item.isReminderEnabled,
+      reminderMinutes: item.reminderMinutes,
     }, ...prev])
+  }
+
+  async function handleListItemReminderToggle(scheduleId: string, enabled: boolean) {
+    try {
+      const target = listItems.find(it => it.id === scheduleId)
+      if (!target || !target.startTime) {
+        setSnackbarMessage('시작 시간이 있는 일정만 알림을 켤 수 있습니다')
+        setSnackbarOpen(true)
+        return
+      }
+      // 낙관적 업데이트: 먼저 UI 상태를 변경해 애니메이션을 자연스럽게 보여줌
+      setListItems(prev => prev.map(it => it.id === scheduleId ? { ...it, isReminderEnabled: enabled } : it))
+      const toggled = await ScheduleApi.toggleReminderEnabled(scheduleId)
+      // 서버 응답으로 최종 동기화 (경합 상황 대비)
+      setListItems(prev => prev.map(it => it.id === scheduleId ? { ...it, isReminderEnabled: toggled.enabled } : it))
+      setSnackbarMessage(toggled.enabled ? '알림을 켰습니다' : '알림을 껐습니다')
+      setSnackbarOpen(true)
+    } catch (_e) {
+      // 실패 시 롤백
+      setListItems(prev => prev.map(it => it.id === scheduleId ? { ...it, isReminderEnabled: !enabled } : it))
+      setSnackbarMessage('알림 상태 변경에 실패했습니다')
+      setSnackbarOpen(true)
+    }
   }
 
   
@@ -282,6 +318,7 @@ export function CalendarPage() {
                 onEdit={handleListItemEdit}
                 onDelete={handleListItemDelete}
                 onItemClick={handleListItemClick}
+                onToggleReminder={handleListItemReminderToggle}
               />
             )}
           </Stack>
