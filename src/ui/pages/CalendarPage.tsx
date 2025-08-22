@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Button, Snackbar, Stack, TextField, Typography } from '@mui/material'
+import { Button, Snackbar, Stack, TextField, Typography, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material'
 import { LocalizationProvider } from '@mui/x-date-pickers'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import dayjs, { Dayjs } from 'dayjs'
@@ -30,6 +30,8 @@ export function CalendarPage() {
   const pendingDeleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [query, setQuery] = useState('')
+  const [notifOpen, setNotifOpen] = useState(false)
+  const [notifData, setNotifData] = useState<{ title: string, message?: string, scheduleDate?: string, startTime?: string, endTime?: string } | null>(null)
 
   function normalizeEnabled(value: unknown): boolean {
     if (typeof value === 'boolean') return value
@@ -39,14 +41,21 @@ export function CalendarPage() {
   }
 
   function handleReminderEvent(payload: ReminderEventPayload) {
-    const text = payload.title || '일정 알림'
-    const body = payload.message || `${payload.scheduleDate ?? ''} ${payload.startTime ?? ''}`.trim()
-    // 항상 인앱 스낵바로도 노출 (네이티브 알림이 OS/브라우저에 의해 억제되는 경우 대응)
-    setSnackbarMessage(body || text)
-    setSnackbarOpen(true)
+    const local = listItems.find(it => it.id === payload.scheduleId) || null
+    const title = payload.title || local?.title || '일정 알림'
+    const message = (payload.message && payload.message.trim().length > 0) ? payload.message : (local?.description || '')
+    const startTime = payload.startTime || local?.startTime
+    const endTime = local?.endTime
+    const scheduleDate = payload.scheduleDate || local?.scheduleDate
+    setNotifData({ title, message, scheduleDate, startTime, endTime })
+    setNotifOpen(true)
     if ('Notification' in window && Notification.permission === 'granted') {
-      try { new Notification(text, { body }) } catch (_e) {}
+      try { new Notification(title, { body: message || '' }) } catch (_e) {}
     }
+  }
+
+  function handleNotificationDialogCloseButtonClick() {
+    setNotifOpen(false)
   }
 
   function handleTestEvent(payload: TestEventPayload) {
@@ -362,6 +371,26 @@ export function CalendarPage() {
         onDelete={handleDetailDelete}
         onDuplicate={handleDetailDuplicate}
       />
+      <Dialog open={notifOpen} onClose={(_e, _r) => { /* 강제 버튼 닫기만 허용 */ }} fullWidth maxWidth="sm">
+        <DialogTitle>일정 알림</DialogTitle>
+        <DialogContent>
+          <Stack spacing={1.25} sx={{ mt: 0.5 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>{notifData?.title || '일정 알림'}</Typography>
+            {notifData?.message && (
+              <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>{notifData.message}</Typography>
+            )}
+            <Stack spacing={0.5}>
+              {notifData?.scheduleDate && (
+                <Typography variant="body2" color="text.secondary">날짜: {notifData.scheduleDate}</Typography>
+              )}
+              <Typography variant="body2" color="text.secondary">시간: {(notifData?.startTime || '-')}{notifData?.endTime ? ` ~ ${notifData.endTime}` : ''}</Typography>
+            </Stack>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleNotificationDialogCloseButtonClick}>닫기</Button>
+        </DialogActions>
+      </Dialog>
       <Snackbar
         open={snackbarOpen}
         onClose={handleSnackbarClose}
