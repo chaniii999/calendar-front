@@ -13,7 +13,7 @@ import { CalendarSidebar } from '../../lib/components/CalendarSidebar'
 import { CalendarListSkeleton } from '../../lib/components/CalendarListSkeleton'
 import type { ScheduleListItem } from './calendar/types'
 import { useNotificationsSSE } from '../../lib/sse/useNotificationsSSE'
-import type { ReminderEventPayload } from '../../lib/sse/types'
+import type { ReminderEventPayload, TestEventPayload } from '../../lib/sse/types'
 
 export function CalendarPage() {
   const [cursor, setCursor] = useState<Dayjs>(dayjs())
@@ -39,15 +39,42 @@ export function CalendarPage() {
   }
 
   function handleReminderEvent(payload: ReminderEventPayload) {
+    const text = payload.title || '일정 알림'
+    const body = payload.message || `${payload.scheduleDate ?? ''} ${payload.startTime ?? ''}`.trim()
+    // 항상 인앱 스낵바로도 노출 (네이티브 알림이 OS/브라우저에 의해 억제되는 경우 대응)
+    setSnackbarMessage(body || text)
+    setSnackbarOpen(true)
     if ('Notification' in window && Notification.permission === 'granted') {
-      try {
-        new Notification(payload.title || '일정 알림', { body: payload.message })
-      } catch (_e) {}
+      try { new Notification(text, { body }) } catch (_e) {}
     }
   }
 
+  function handleTestEvent(payload: TestEventPayload) {
+    const msg = payload.message || 'test'
+    // 항상 인앱 스낵바 노출
+    setSnackbarMessage(`테스트: ${msg}`)
+    setSnackbarOpen(true)
+    if ('Notification' in window && Notification.permission === 'granted') {
+      try { new Notification('테스트 알림', { body: msg }) } catch (_e) {}
+    }
+  }
+
+  function handleSseOpen() {
+    // 브라우저 알림 권한 요청 (최초 1회)
+    if ('Notification' in window && Notification.permission === 'default') {
+      try { Notification.requestPermission().catch(() => {}) } catch (_e) {}
+    }
+    setSnackbarMessage('알림 채널에 연결되었습니다')
+    setSnackbarOpen(true)
+  }
+
+  function handleSseError(_msg: string) {
+    setSnackbarMessage('알림 채널 연결에 문제가 있습니다')
+    setSnackbarOpen(true)
+  }
+
   // 로그인 완료 후에만 실행: 토큰은 App 초기화에서 설정됨
-  useNotificationsSSE({ handleReminderEvent })
+  useNotificationsSSE({ handleReminderEvent, handleTestEvent, handleOpen: handleSseOpen, handleError: handleSseError })
 
   function getRangeByView(base: Dayjs, mode: ViewMode): { start: string, end: string } {
     if (mode === 'day') {
@@ -232,6 +259,7 @@ export function CalendarPage() {
       setListItems(prev => prev.map(it => it.id === scheduleId ? { ...it, isReminderEnabled: !enabled } : it))
       setSnackbarMessage('알림 상태 변경에 실패했습니다')
       setSnackbarOpen(true)
+      try { console.error('[REMINDER] toggle failed', { scheduleId }) } catch (__e) {}
     }
   }
 

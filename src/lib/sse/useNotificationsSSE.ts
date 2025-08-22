@@ -9,7 +9,10 @@ export function useNotificationsSSE(handlers: NotificationsSSEHandlers = {}) {
 
 	useEffect(() => {
 		const { stop } = startNotificationsSSE(sseConfig.notificationsPath, {
-			getAccessToken: () => readTokensFromStorage().accessToken,
+			getAccessToken: () => {
+				const tokens = readTokensFromStorage()
+				return tokens.accessToken
+			},
 			deDuplicationTtlMs: 60_000,
 			initialReconnectDelayMs: 1000,
 			maxReconnectDelayMs: 30_000,
