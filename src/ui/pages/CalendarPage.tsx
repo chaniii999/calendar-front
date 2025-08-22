@@ -32,6 +32,10 @@ export function CalendarPage() {
   const [query, setQuery] = useState('')
   const [notifOpen, setNotifOpen] = useState(false)
   const [notifData, setNotifData] = useState<{ title: string, message?: string, scheduleDate?: string, startTime?: string, endTime?: string } | null>(null)
+  const audioCtxRef = useRef<AudioContext | null>(null)
+  const oscillRef = useRef<OscillatorNode | null>(null)
+  const beepIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const beepStopTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   function normalizeEnabled(value: unknown): boolean {
     if (typeof value === 'boolean') return value
@@ -57,6 +61,76 @@ export function CalendarPage() {
   function handleNotificationDialogCloseButtonClick() {
     setNotifOpen(false)
   }
+
+  function playMelodyOnce() {
+    try {
+      const Ctx: any = (window as any).AudioContext || (window as any).webkitAudioContext
+      const ctx: AudioContext = new Ctx()
+      // 간단한 멜로디(자연스러운 알람 느낌): A5-B5-C#6-E6 | A5-E6-C#6-B5 (총 ~6초)
+      const melody: Array<{ f: number, d: number }> = [
+        { f: 880.0, d: 0.45 },   // A5
+        { f: 987.77, d: 0.45 },  // B5
+        { f: 1108.73, d: 0.45 }, // C#6
+        { f: 1318.51, d: 0.6 },  // E6 (길게)
+        { f: 0, d: 0.2 },
+        { f: 880.0, d: 0.45 },
+        { f: 1318.51, d: 0.45 },
+        { f: 1108.73, d: 0.45 },
+        { f: 987.77, d: 0.6 },
+      ]
+      let t = ctx.currentTime
+      for (const note of melody) {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.type = 'sine'
+        const isRest = note.f === 0
+        if (!isRest) osc.frequency.setValueAtTime(note.f, t)
+        // 부드러운 어택/릴리즈
+        gain.gain.setValueAtTime(0.0001, t)
+        if (!isRest) gain.gain.exponentialRampToValueAtTime(0.15, t + 0.05)
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(0.1, note.d - 0.05))
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        osc.start(t)
+        osc.stop(t + note.d)
+        t += note.d + 0.05
+      }
+      audioCtxRef.current = ctx
+      // 컨텍스트 자동 종료
+      const totalMs = (t - ctx.currentTime + 0.2) * 1000
+      setTimeout(() => {
+        try { ctx.close() } catch (_e) {}
+        if (audioCtxRef.current === ctx) audioCtxRef.current = null
+      }, totalMs)
+    } catch (_e) {}
+  }
+
+  // 효과음: 알림 창이 열린 동안 1분간 주기적으로 재생
+  useEffect(() => {
+    if (!notifOpen) {
+      if (beepIntervalRef.current) { clearInterval(beepIntervalRef.current); beepIntervalRef.current = null }
+      if (beepStopTimeoutRef.current) { clearTimeout(beepStopTimeoutRef.current); beepStopTimeoutRef.current = null }
+      try { oscillRef.current?.stop(); oscillRef.current?.disconnect() } catch (_e) {}
+      try { audioCtxRef.current?.close() } catch (_e) {}
+      oscillRef.current = null
+      audioCtxRef.current = null
+      return
+    }
+    // 즉시 1회 재생(멜로디)
+    playMelodyOnce()
+    // 1분 동안 6초 간격으로 반복 재생(멜로디 길이에 맞춰 자연스럽게)
+    beepIntervalRef.current = setInterval(() => {
+      playMelodyOnce()
+    }, 6000)
+    // 1분 후 자동 중단(창이 계속 열려 있어도 더 이상 소리 재생 X)
+    beepStopTimeoutRef.current = setTimeout(() => {
+      if (beepIntervalRef.current) { clearInterval(beepIntervalRef.current); beepIntervalRef.current = null }
+    }, 60000)
+    return () => {
+      if (beepIntervalRef.current) { clearInterval(beepIntervalRef.current); beepIntervalRef.current = null }
+      if (beepStopTimeoutRef.current) { clearTimeout(beepStopTimeoutRef.current); beepStopTimeoutRef.current = null }
+    }
+  }, [notifOpen])
 
   function handleTestEvent(payload: TestEventPayload) {
     const msg = payload.message || 'test'
@@ -371,9 +445,34 @@ export function CalendarPage() {
         onDelete={handleDetailDelete}
         onDuplicate={handleDetailDuplicate}
       />
-      <Dialog open={notifOpen} onClose={(_e, _r) => { /* 강제 버튼 닫기만 허용 */ }} fullWidth maxWidth="sm">
-        <DialogTitle>일정 알림</DialogTitle>
-        <DialogContent>
+      <Dialog
+        open={notifOpen}
+        onClose={(_e, _r) => { /* 강제 버튼 닫기만 허용 */ }}
+        fullWidth
+        maxWidth="sm"
+        disableEscapeKeyDown
+        BackdropProps={{
+          sx: {
+            backgroundColor: 'rgba(0,0,0,0.4)',
+            animation: 'alarmPulse 1.2s ease-in-out infinite',
+            '@keyframes alarmPulse': {
+              '0%': { backgroundColor: 'rgba(0,0,0,0.35)' },
+              '50%': { backgroundColor: 'rgba(255,0,0,0.25)' },
+              '100%': { backgroundColor: 'rgba(0,0,0,0.35)' },
+            },
+          }
+        }}
+      >
+        <DialogTitle>{`일정 알림 · ${notifData?.title || ''}`}</DialogTitle>
+        <DialogContent sx={{
+          borderRadius: 2,
+          boxShadow: 6,
+          animation: 'alarmRing 700ms ease-in-out infinite alternate',
+          '@keyframes alarmRing': {
+            '0%': { boxShadow: '0 0 0px rgba(255,0,0,0.6)' },
+            '100%': { boxShadow: '0 0 24px rgba(255,0,0,0.9)' },
+          },
+        }}>
           <Stack spacing={1.25} sx={{ mt: 0.5 }}>
             <Typography variant="h6" sx={{ fontWeight: 700 }}>{notifData?.title || '일정 알림'}</Typography>
             {notifData?.message && (
