@@ -1,9 +1,11 @@
 import React, { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { setTokens } from '../../lib/api/http'
 import { saveTokensToStorage } from '../../lib/auth/session'
 import { Box, CircularProgress, Typography } from '@mui/material'
 
 export default function LoginSuccess() {
+  const navigate = useNavigate()
   useEffect(() => {
     function readParam(params: URLSearchParams, keys: string[]): string | null {
       for (const key of keys) {
@@ -21,8 +23,7 @@ export default function LoginSuccess() {
     if (accessToken && refreshToken) {
       setTokens(accessToken, refreshToken)
       saveTokensToStorage(accessToken, refreshToken)
-      const next = `${window.location.origin}/calendar`
-      window.location.replace(next)
+      navigate('/calendar', { replace: true })
     }
   }, [])
   return (
