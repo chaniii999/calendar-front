@@ -11,6 +11,7 @@ function NavTabs() {
   const location = useLocation()
   const [tab, setTab] = useState(0)
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | 'unsupported'>('unsupported')
+  const API_BASE = ((import.meta as unknown as { env?: Record<string, string> }).env?.['VITE_API_BASE']) || ''
 
   function handleTabsChange(_e: unknown, newValue: number) {
     setTab(newValue)
@@ -44,12 +45,14 @@ function NavTabs() {
   const tokens = readTokensFromStorage()
   const isAuthed = Boolean(tokens.accessToken && tokens.refreshToken)
   const handleLoginButtonClick = () => {
-    window.location.href = '/api/auth/login/google'
+    const url = `${API_BASE}/api/auth/login/google`
+    window.location.href = url
   }
   const handleLogoutButtonClick = () => {
     clearAuthTokens()
     clearTokensFromStorage()
-    window.location.replace('/')
+    // 루트 도메인으로 이동
+    window.location.replace('https://everyplan.site/')
   }
   const shouldShowButtons = false
 

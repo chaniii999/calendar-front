@@ -58,8 +58,7 @@ export function ScheduleEditDialog({ open, schedule, onClose, onUpdated }: Sched
       isAllDay: allDay || undefined,
       startTime: allDay ? undefined : (startTime || undefined),
       endTime: allDay ? undefined : (endTime || undefined),
-      color: schedule.color,
-      color: color || undefined,
+      color: color || schedule.color || undefined,
     }
     const updated = await ScheduleApi.update(schedule.id, payload)
     onUpdated(updated)

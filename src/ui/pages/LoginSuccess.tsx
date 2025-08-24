@@ -21,7 +21,7 @@ export default function LoginSuccess() {
     if (accessToken && refreshToken) {
       setTokens(accessToken, refreshToken)
       saveTokensToStorage(accessToken, refreshToken)
-      window.location.replace('/calendar')
+      window.location.replace('https://everyplan.site/calendar')
     }
   }, [])
   return (

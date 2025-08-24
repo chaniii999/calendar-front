@@ -1,5 +1,6 @@
 let accessToken: string | null = null
 let refreshToken: string | null = null
+const API_BASE = (import.meta as unknown as { env?: Record<string, string> }).env?.['VITE_API_BASE'] || ''
 import { clearTokensFromStorage } from '../auth/session'
 
 export function setTokens(nextAccessToken: string, nextRefreshToken: string) {
@@ -13,9 +14,10 @@ export async function http<T>(input: RequestInfo, init?: RequestInit): Promise<T
     ...(init?.headers as Record<string, string> ?? {}),
   }
   if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`
-  const res = await fetch(input, { ...init, headers })
+  const resolvedUrl = typeof input === 'string' && input.startsWith('/') ? (API_BASE + input) : input
+  const res = await fetch(resolvedUrl, { ...init, headers })
   if (res.status === 401 && refreshToken) {
-    const refreshed = await fetch('/api/auth/refresh', {
+    const refreshed = await fetch(`${API_BASE}/api/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken }),
@@ -24,7 +26,8 @@ export async function http<T>(input: RequestInfo, init?: RequestInit): Promise<T
       const body = await refreshed.json()
       const next = body.data as { accessToken: string, refreshToken: string }
       setTokens(next.accessToken, next.refreshToken)
-      const retry = await fetch(input, { ...init, headers: { ...headers, Authorization: `Bearer ${next.accessToken}` } })
+      const retryUrl = typeof input === 'string' && input.startsWith('/') ? (API_BASE + input) : input
+      const retry = await fetch(retryUrl, { ...init, headers: { ...headers, Authorization: `Bearer ${next.accessToken}` } })
       if (!retry.ok) throw new Error(`HTTP ${retry.status}`)
       return retry.json()
     }
