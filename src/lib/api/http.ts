@@ -1,6 +1,6 @@
 let accessToken: string | null = null
 let refreshToken: string | null = null
-const API_BASE = (import.meta as unknown as { env?: Record<string, string> }).env?.['VITE_API_BASE'] || ''
+import { API_BASE } from './config'
 import { clearTokensFromStorage } from '../auth/session'
 
 export function setTokens(nextAccessToken: string, nextRefreshToken: string) {

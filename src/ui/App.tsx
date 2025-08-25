@@ -5,13 +5,13 @@ import { CalendarPage } from './pages/CalendarPage'
 import LoginSuccess from './pages/LoginSuccess'
 import { readTokensFromStorage, clearTokensFromStorage, saveTokensToStorage } from '../lib/auth/session'
 import { setTokens, clearAuthTokens } from '../lib/api/http'
+import { API_BASE } from '../lib/api/config'
 
 function NavTabs() {
   const navigate = useNavigate()
   const location = useLocation()
   const [tab, setTab] = useState(0)
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | 'unsupported'>('unsupported')
-  const API_BASE = ((import.meta as unknown as { env?: Record<string, string> }).env?.['VITE_API_BASE']) || ''
 
   function handleTabsChange(_e: unknown, newValue: number) {
     setTab(newValue)
@@ -137,7 +137,7 @@ export default function App() {
 
 function LoginGate() {
   const handleLoginButtonClick = () => {
-    window.location.href = '/api/auth/login/google'
+    window.location.href = `${API_BASE}/api/auth/login/google`
   }
   return (
     <Paper sx={{ p: 4, textAlign: 'center' }}>

@@ -332,10 +332,11 @@ export function CalendarPage() {
       }
       // 낙관적 업데이트: 먼저 UI 상태를 변경해 애니메이션을 자연스럽게 보여줌
       setListItems(prev => prev.map(it => it.id === scheduleId ? { ...it, isReminderEnabled: enabled } : it))
-      const toggled = await ScheduleApi.toggleReminderEnabled(scheduleId)
+      // 사용자의 의도(켜기/끄기)에 맞춰 강제 설정 API 사용 (토글 API는 상태 경합에 취약)
+      const updated = await ScheduleApi.setReminderEnabled(scheduleId, enabled)
       // 서버 응답으로 최종 동기화 (경합 상황 대비)
-      setListItems(prev => prev.map(it => it.id === scheduleId ? { ...it, isReminderEnabled: toggled.enabled } : it))
-      setSnackbarMessage(toggled.enabled ? '알림을 켰습니다' : '알림을 껐습니다')
+      setListItems(prev => prev.map(it => it.id === scheduleId ? { ...it, isReminderEnabled: updated.isReminderEnabled } : it))
+      setSnackbarMessage(updated.isReminderEnabled ? '알림을 켰습니다' : '알림을 껐습니다')
       setSnackbarOpen(true)
     } catch (_e) {
       // 실패 시 롤백

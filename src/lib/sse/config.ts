@@ -1,6 +1,6 @@
-const BASE = (import.meta as unknown as { env?: Record<string, string> }).env?.['VITE_API_BASE'] || ''
+import { API_BASE, SSE_NOTIFICATIONS_PATH } from '../api/config'
 export const sseConfig = {
-	notificationsPath: (import.meta.env.VITE_SSE_NOTIFICATIONS_PATH as string | undefined) || `${BASE}/api/notifications/stream`,
+	notificationsPath: SSE_NOTIFICATIONS_PATH || `${API_BASE}/api/notifications/stream`,
 }
 
 
