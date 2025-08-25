@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Stack, Switch, TextField } from '@mui/material'
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, Switch, TextField, Typography } from '@mui/material'
 import { ColorPalettePicker } from './ColorPalettePicker'
 import dayjs from 'dayjs'
 import { ScheduleApi, ScheduleRequest, ScheduleResponse } from '../api/schedule'
@@ -42,6 +42,18 @@ export function ScheduleCreateDialog({ open, defaultDate, onClose, onCreated }: 
     onClose()
   }
 
+  function handleAllDaySwitchChange(_e: React.ChangeEvent<HTMLInputElement>, checked: boolean) {
+    setAllDay(checked)
+  }
+
+  function handleStartTimeInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setStartTime(e.target.value)
+  }
+
+  function handleEndTimeInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setEndTime(e.target.value)
+  }
+
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>일정 추가 ({dayjs(defaultDate).format('YYYY-MM-DD')})</DialogTitle>
@@ -50,11 +62,14 @@ export function ScheduleCreateDialog({ open, defaultDate, onClose, onCreated }: 
           <TextField label="제목" value={title} onChange={handleTitleInputChange} autoFocus fullWidth size="small" />
           <TextField label="설명" value={desc} onChange={handleDescriptionInputChange} fullWidth size="small" />
           <ColorPalettePicker label="색상 선택" value={color} onChange={setColor} />
-          <FormControlLabel control={<Switch checked={allDay} onChange={(_, v)=>setAllDay(v)} />} label="종일" />
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Typography variant="body2">종일</Typography>
+            <Switch checked={allDay} onChange={handleAllDaySwitchChange} />
+          </Stack>
           {!allDay && (
             <Stack direction="row" spacing={1}>
-              <TextField label="시작" type="time" size="small" value={startTime} onChange={e=>setStartTime(e.target.value)} />
-              <TextField label="종료" type="time" size="small" value={endTime} onChange={e=>setEndTime(e.target.value)} />
+              <TextField label="시작" type="time" size="small" value={startTime} onChange={handleStartTimeInputChange} />
+              <TextField label="종료" type="time" size="small" value={endTime} onChange={handleEndTimeInputChange} />
             </Stack>
           )}
         </Stack>

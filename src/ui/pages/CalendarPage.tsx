@@ -265,7 +265,7 @@ export function CalendarPage() {
       color: item.color,
       isAllDay: item.isAllDay,
       description: item.description,
-      isReminderEnabled: item.isReminderEnabled,
+      isReminderEnabled: normalizeEnabled((item as any).isReminderEnabled ?? (item as any).reminderEnabled),
       reminderMinutes: item.reminderMinutes,
     } : it))
   }
@@ -317,7 +317,7 @@ export function CalendarPage() {
       color: item.color,
       isAllDay: item.isAllDay,
       description: item.description,
-      isReminderEnabled: item.isReminderEnabled,
+      isReminderEnabled: normalizeEnabled((item as any).isReminderEnabled ?? (item as any).reminderEnabled),
       reminderMinutes: item.reminderMinutes,
     }, ...prev])
   }
