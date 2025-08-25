@@ -10,7 +10,7 @@ export default defineConfig({
       '@components': '/src/lib/components',
       '@lib': '/src/lib',
       '@store': '/src/store',
-      '@styles': '/src/styles',
+      '@styles': '/src/ui',
       '@utils': '/src/utils',
     },
   },
