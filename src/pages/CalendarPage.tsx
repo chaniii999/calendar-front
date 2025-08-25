@@ -12,8 +12,7 @@ import { CalendarList } from '@components/CalendarList'
 import { CalendarSidebar } from '@components/CalendarSidebar'
 import { CalendarListSkeleton } from '@components/CalendarListSkeleton'
 import type { ScheduleListItem } from '@pages/calendar/types'
-import { useNotificationsSSE } from '@lib/sse/useNotificationsSSE'
-import type { ReminderEventPayload, TestEventPayload } from '@lib/sse/types'
+import { useCalendarNotifications } from '@pages/calendar/useCalendarNotifications'
 
 export function CalendarPage() {
   const [cursor, setCursor] = useState<Dayjs>(dayjs())
@@ -30,12 +29,9 @@ export function CalendarPage() {
   const pendingDeleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [query, setQuery] = useState('')
-  const [notifOpen, setNotifOpen] = useState(false)
-  const [notifData, setNotifData] = useState<{ title: string, message?: string, scheduleDate?: string, startTime?: string, endTime?: string } | null>(null)
-  const audioCtxRef = useRef<AudioContext | null>(null)
-  const oscillRef = useRef<OscillatorNode | null>(null)
-  const beepIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const beepStopTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const { notifOpen, notifData, handleNotificationDialogCloseButtonClick } = useCalendarNotifications({
+    handleShowMessage: (m: string) => { setSnackbarMessage(m); setSnackbarOpen(true) }
+  })
 
   function normalizeEnabled(value: unknown): boolean {
     if (typeof value === 'boolean') return value
@@ -44,110 +40,6 @@ export function CalendarPage() {
     return false
   }
 
-  function handleReminderEvent(payload: ReminderEventPayload) {
-    const local = listItems.find(it => it.id === payload.scheduleId) || null
-    const title = payload.title || local?.title || '일정 알림'
-    const message = (payload.message && payload.message.trim().length > 0) ? payload.message : (local?.description || '')
-    const startTime = payload.startTime || local?.startTime
-    const endTime = local?.endTime
-    const scheduleDate = payload.scheduleDate || local?.scheduleDate
-    setNotifData({ title, message, scheduleDate, startTime, endTime })
-    setNotifOpen(true)
-    if ('Notification' in window && Notification.permission === 'granted') {
-      try { new Notification(title, { body: message || '' }) } catch (_e) {}
-    }
-  }
-
-  function handleNotificationDialogCloseButtonClick() {
-    setNotifOpen(false)
-  }
-
-  function playMelodyOnce() {
-    try {
-      const Ctx: any = (window as any).AudioContext || (window as any).webkitAudioContext
-      const ctx: AudioContext = new Ctx()
-      const melody: Array<{ f: number, d: number }> = [
-        { f: 880.0, d: 0.45 },
-        { f: 987.77, d: 0.45 },
-        { f: 1108.73, d: 0.45 },
-        { f: 1318.51, d: 0.6 },
-        { f: 0, d: 0.2 },
-        { f: 880.0, d: 0.45 },
-        { f: 1318.51, d: 0.45 },
-        { f: 1108.73, d: 0.45 },
-        { f: 987.77, d: 0.6 },
-      ]
-      let t = ctx.currentTime
-      for (const note of melody) {
-        const osc = ctx.createOscillator()
-        const gain = ctx.createGain()
-        osc.type = 'sine'
-        const isRest = note.f === 0
-        if (!isRest) osc.frequency.setValueAtTime(note.f, t)
-        gain.gain.setValueAtTime(0.0001, t)
-        if (!isRest) gain.gain.exponentialRampToValueAtTime(0.15, t + 0.05)
-        gain.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(0.1, note.d - 0.05))
-        osc.connect(gain)
-        gain.connect(ctx.destination)
-        osc.start(t)
-        osc.stop(t + note.d)
-        t += note.d + 0.05
-      }
-      audioCtxRef.current = ctx
-      const totalMs = (t - ctx.currentTime + 0.2) * 1000
-      setTimeout(() => {
-        try { ctx.close() } catch (_e) {}
-        if (audioCtxRef.current === ctx) audioCtxRef.current = null
-      }, totalMs)
-    } catch (_e) {}
-  }
-
-  useEffect(() => {
-    if (!notifOpen) {
-      if (beepIntervalRef.current) { clearInterval(beepIntervalRef.current); beepIntervalRef.current = null }
-      if (beepStopTimeoutRef.current) { clearTimeout(beepStopTimeoutRef.current); beepStopTimeoutRef.current = null }
-      try { oscillRef.current?.stop(); oscillRef.current?.disconnect() } catch (_e) {}
-      try { audioCtxRef.current?.close() } catch (_e) {}
-      oscillRef.current = null
-      audioCtxRef.current = null
-      return
-    }
-    playMelodyOnce()
-    beepIntervalRef.current = setInterval(() => {
-      playMelodyOnce()
-    }, 6000)
-    beepStopTimeoutRef.current = setTimeout(() => {
-      if (beepIntervalRef.current) { clearInterval(beepIntervalRef.current); beepIntervalRef.current = null }
-    }, 60000)
-    return () => {
-      if (beepIntervalRef.current) { clearInterval(beepIntervalRef.current); beepIntervalRef.current = null }
-      if (beepStopTimeoutRef.current) { clearTimeout(beepStopTimeoutRef.current); beepStopTimeoutRef.current = null }
-    }
-  }, [notifOpen])
-
-  function handleTestEvent(payload: TestEventPayload) {
-    const msg = payload.message || 'test'
-    setSnackbarMessage(`테스트: ${msg}`)
-    setSnackbarOpen(true)
-    if ('Notification' in window && Notification.permission === 'granted') {
-      try { new Notification('테스트 알림', { body: msg }) } catch (_e) {}
-    }
-  }
-
-  function handleSseOpen() {
-    if ('Notification' in window && Notification.permission === 'default') {
-      try { Notification.requestPermission().catch(() => {}) } catch (_e) {}
-    }
-    setSnackbarMessage('알림 채널에 연결되었습니다')
-    setSnackbarOpen(true)
-  }
-
-  function handleSseError(_msg: string) {
-    setSnackbarMessage('알림 채널 연결에 문제가 있습니다')
-    setSnackbarOpen(true)
-  }
-
-  useNotificationsSSE({ handleReminderEvent, handleTestEvent, handleOpen: handleSseOpen, handleError: handleSseError })
 
   function getRangeByView(base: Dayjs, mode: ViewMode): { start: string, end: string } {
     if (mode === 'day') {
