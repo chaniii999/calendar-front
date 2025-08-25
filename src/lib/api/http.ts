@@ -1,7 +1,7 @@
 let accessToken: string | null = null
 let refreshToken: string | null = null
 import { API_BASE } from './config'
-import { clearTokensFromStorage } from '../auth/session'
+import { clearTokensFromStorage } from '@lib/auth/session'
 
 export function setTokens(nextAccessToken: string, nextRefreshToken: string) {
   accessToken = nextAccessToken
