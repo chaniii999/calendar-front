@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { AppBar, Avatar, Box, Button, Container, Divider, Paper, Tab, Tabs, Toolbar, Typography } from '@mui/material'
 import { BrowserRouter, Route, Routes, useNavigate, useLocation, Navigate } from 'react-router-dom'
-import { CalendarPage } from './pages/CalendarPage'
-import LoginSuccess from './pages/LoginSuccess'
-import { readTokensFromStorage, clearTokensFromStorage, saveTokensToStorage } from '../lib/auth/session'
-import { setTokens, clearAuthTokens } from '../lib/api/http'
-import { API_BASE } from '../lib/api/config'
+import { CalendarPage } from './ui/pages/CalendarPage'
+import LoginSuccess from './ui/pages/LoginSuccess'
+import { readTokensFromStorage, clearTokensFromStorage, saveTokensToStorage } from './lib/auth/session'
+import { setTokens, clearAuthTokens } from './lib/api/http'
+import { API_BASE } from './lib/api/config'
 
 function NavTabs() {
   const navigate = useNavigate()
