@@ -1,7 +1,7 @@
 import React from 'react'
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Stack, Typography } from '@mui/material'
 import dayjs from 'dayjs'
-import type { ScheduleListItem } from '../../ui/pages/calendar/types'
+import type { ScheduleListItem } from '@pages/calendar/types'
 
 export interface ScheduleDetailDialogProps {
 	open: boolean

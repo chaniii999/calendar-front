@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, Switch, TextField, Typography } from '@mui/material'
-import { ColorPalettePicker } from './ColorPalettePicker'
+import { ColorPalettePicker } from '@components/ColorPalettePicker'
 import dayjs from 'dayjs'
-import { ScheduleApi, ScheduleRequest, ScheduleResponse } from '../api/schedule'
+import { ScheduleApi, ScheduleRequest, ScheduleResponse } from '@lib/api/schedule'
 
 export interface ScheduleCreateDialogProps {
   open: boolean

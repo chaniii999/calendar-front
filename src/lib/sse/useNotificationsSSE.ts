@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react'
-import { startNotificationsSSE } from './notifications'
-import { sseConfig } from './config'
-import type { NotificationsSSEHandlers } from './types'
-import { readTokensFromStorage } from '../auth/session'
+import { startNotificationsSSE } from '@lib/sse/notifications'
+import { sseConfig } from '@lib/sse/config'
+import type { NotificationsSSEHandlers } from '@lib/sse/types'
+import { readTokensFromStorage } from '@lib/auth/session'
 
 export function useNotificationsSSE(handlers: NotificationsSSEHandlers = {}) {
 	const stopRef = useRef<null | (() => void)>(null)

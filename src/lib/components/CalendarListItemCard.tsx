@@ -3,7 +3,7 @@ import { Paper, Stack, Typography, Chip, IconButton, Switch, Tooltip } from '@mu
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import dayjs from 'dayjs'
-import type { ScheduleListItem } from '../../ui/pages/calendar/types'
+import type { ScheduleListItem } from '@pages/calendar/types'
 
 export interface CalendarListItemCardProps {
 	item: ScheduleListItem

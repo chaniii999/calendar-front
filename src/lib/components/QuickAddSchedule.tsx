@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Stack, TextField, Button } from '@mui/material'
-import { ScheduleApi, type ScheduleRequest, type ScheduleResponse } from '../api/schedule'
+import { ScheduleApi, type ScheduleRequest, type ScheduleResponse } from '@lib/api/schedule'
 
 export interface QuickAddScheduleProps {
 	defaultDate: string

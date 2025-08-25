@@ -1,8 +1,8 @@
 import React from 'react'
 import { List, ListItem, ListItemText, Chip, Stack, Typography, Divider, Paper, IconButton } from '@mui/material'
 import dayjs from 'dayjs'
-import type { ScheduleListItem } from '../../ui/pages/calendar/types'
-import { CalendarListItemCard } from './CalendarListItemCard'
+import type { ScheduleListItem } from '@pages/calendar/types'
+import { CalendarListItemCard } from '@components/CalendarListItemCard'
 
 export interface CalendarListProps {
 	items: ScheduleListItem[]

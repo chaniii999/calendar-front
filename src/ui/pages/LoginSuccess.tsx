@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { setTokens } from '../../lib/api/http'
-import { saveTokensToStorage } from '../../lib/auth/session'
+import { setTokens } from '@lib/api/http'
+import { saveTokensToStorage } from '@lib/auth/session'
 import { Box, CircularProgress, Typography } from '@mui/material'
 
 export default function LoginSuccess() {

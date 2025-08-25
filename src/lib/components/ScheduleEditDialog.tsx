@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Stack, Switch, TextField } from '@mui/material'
-import { ColorPalettePicker } from './ColorPalettePicker'
+import { ColorPalettePicker } from '@components/ColorPalettePicker'
 import dayjs from 'dayjs'
-import { ScheduleApi, type ScheduleRequest, type ScheduleResponse } from '../api/schedule'
+import { ScheduleApi, type ScheduleRequest, type ScheduleResponse } from '@lib/api/schedule'
 
 export interface EditableSchedule {
   id: string

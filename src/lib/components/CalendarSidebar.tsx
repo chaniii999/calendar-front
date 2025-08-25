@@ -3,8 +3,8 @@ import { Stack, Button, Paper, IconButton } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import { DateCalendar } from '@mui/x-date-pickers'
 import type { Dayjs } from 'dayjs'
-import { QuickAddSchedule } from './QuickAddSchedule'
-import type { ScheduleResponse } from '../api/schedule'
+import { QuickAddSchedule } from '@components/QuickAddSchedule'
+import type { ScheduleResponse } from '@lib/api/schedule'
 
 export interface CalendarSidebarProps {
 	cursor: Dayjs
