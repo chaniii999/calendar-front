@@ -66,12 +66,11 @@ export function CalendarPage() {
     try {
       const Ctx: any = (window as any).AudioContext || (window as any).webkitAudioContext
       const ctx: AudioContext = new Ctx()
-      // 간단한 멜로디(자연스러운 알람 느낌): A5-B5-C#6-E6 | A5-E6-C#6-B5 (총 ~6초)
       const melody: Array<{ f: number, d: number }> = [
-        { f: 880.0, d: 0.45 },   // A5
-        { f: 987.77, d: 0.45 },  // B5
-        { f: 1108.73, d: 0.45 }, // C#6
-        { f: 1318.51, d: 0.6 },  // E6 (길게)
+        { f: 880.0, d: 0.45 },
+        { f: 987.77, d: 0.45 },
+        { f: 1108.73, d: 0.45 },
+        { f: 1318.51, d: 0.6 },
         { f: 0, d: 0.2 },
         { f: 880.0, d: 0.45 },
         { f: 1318.51, d: 0.45 },
@@ -85,7 +84,6 @@ export function CalendarPage() {
         osc.type = 'sine'
         const isRest = note.f === 0
         if (!isRest) osc.frequency.setValueAtTime(note.f, t)
-        // 부드러운 어택/릴리즈
         gain.gain.setValueAtTime(0.0001, t)
         if (!isRest) gain.gain.exponentialRampToValueAtTime(0.15, t + 0.05)
         gain.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(0.1, note.d - 0.05))
@@ -96,7 +94,6 @@ export function CalendarPage() {
         t += note.d + 0.05
       }
       audioCtxRef.current = ctx
-      // 컨텍스트 자동 종료
       const totalMs = (t - ctx.currentTime + 0.2) * 1000
       setTimeout(() => {
         try { ctx.close() } catch (_e) {}
@@ -105,7 +102,6 @@ export function CalendarPage() {
     } catch (_e) {}
   }
 
-  // 효과음: 알림 창이 열린 동안 1분간 주기적으로 재생
   useEffect(() => {
     if (!notifOpen) {
       if (beepIntervalRef.current) { clearInterval(beepIntervalRef.current); beepIntervalRef.current = null }
@@ -116,13 +112,10 @@ export function CalendarPage() {
       audioCtxRef.current = null
       return
     }
-    // 즉시 1회 재생(멜로디)
     playMelodyOnce()
-    // 1분 동안 6초 간격으로 반복 재생(멜로디 길이에 맞춰 자연스럽게)
     beepIntervalRef.current = setInterval(() => {
       playMelodyOnce()
     }, 6000)
-    // 1분 후 자동 중단(창이 계속 열려 있어도 더 이상 소리 재생 X)
     beepStopTimeoutRef.current = setTimeout(() => {
       if (beepIntervalRef.current) { clearInterval(beepIntervalRef.current); beepIntervalRef.current = null }
     }, 60000)
@@ -134,7 +127,6 @@ export function CalendarPage() {
 
   function handleTestEvent(payload: TestEventPayload) {
     const msg = payload.message || 'test'
-    // 항상 인앱 스낵바 노출
     setSnackbarMessage(`테스트: ${msg}`)
     setSnackbarOpen(true)
     if ('Notification' in window && Notification.permission === 'granted') {
@@ -143,7 +135,6 @@ export function CalendarPage() {
   }
 
   function handleSseOpen() {
-    // 브라우저 알림 권한 요청 (최초 1회)
     if ('Notification' in window && Notification.permission === 'default') {
       try { Notification.requestPermission().catch(() => {}) } catch (_e) {}
     }
@@ -156,7 +147,6 @@ export function CalendarPage() {
     setSnackbarOpen(true)
   }
 
-  // 로그인 완료 후에만 실행: 토큰은 App 초기화에서 설정됨
   useNotificationsSSE({ handleReminderEvent, handleTestEvent, handleOpen: handleSseOpen, handleError: handleSseError })
 
   function getRangeByView(base: Dayjs, mode: ViewMode): { start: string, end: string } {
@@ -198,7 +188,6 @@ export function CalendarPage() {
     })
     setListItems(flat)
   }
-  
 
   useEffect(() => {
     const { start, end } = getRangeByView(cursor, view)
@@ -207,8 +196,6 @@ export function CalendarPage() {
       .then(handleBuildStateFromSchedules)
       .finally(() => setIsLoading(false))
   }, [cursor, view])
-
-  
 
   const handlePrevMonthButtonClick = () => setCursor(prev => prev.add(-1, 'month'))
   const handleNextMonthButtonClick = () => setCursor(prev => prev.add(1, 'month'))
@@ -223,9 +210,8 @@ export function CalendarPage() {
     setEditOpen(Boolean(target))
   }
   const handleListItemDelete = async (scheduleId: string) => {
-    // 이전 보류 삭제가 있으면 즉시 커밋
     if (pendingDelete) {
-      try { await ScheduleApi.remove(pendingDelete.id) } catch (_e) { /* noop */ }
+      try { await ScheduleApi.remove(pendingDelete.id) } catch (_e) {}
       setPendingDelete(null)
       if (pendingDeleteTimerRef.current) { clearTimeout(pendingDeleteTimerRef.current); pendingDeleteTimerRef.current = null }
     }
@@ -233,19 +219,16 @@ export function CalendarPage() {
     const target = listItems.find(it => it.id === scheduleId)
     if (!target) return
 
-    // UI에서 우선 제거 (낙관적)
     setListItems(prev => prev.filter(it => it.id !== scheduleId))
     setPendingDelete(target)
     setSnackbarMessage('일정을 삭제했습니다')
     setSnackbarOpen(true)
 
-    // 시간 경과 후 실제 삭제 확정
     pendingDeleteTimerRef.current = setTimeout(async () => {
       if (!pendingDelete) return
       try {
         await ScheduleApi.remove(target.id)
       } catch (_e) {
-        // 실패 시 복구
         setListItems(prev => sortListItems([ ...prev, target ]))
       } finally {
         setPendingDelete(null)
@@ -330,24 +313,18 @@ export function CalendarPage() {
         setSnackbarOpen(true)
         return
       }
-      // 낙관적 업데이트: 먼저 UI 상태를 변경해 애니메이션을 자연스럽게 보여줌
       setListItems(prev => prev.map(it => it.id === scheduleId ? { ...it, isReminderEnabled: enabled } : it))
-      // 사용자의 의도(켜기/끄기)에 맞춰 강제 설정 API 사용 (토글 API는 상태 경합에 취약)
       const updated = await ScheduleApi.setReminderEnabled(scheduleId, enabled)
-      // 서버 응답으로 최종 동기화 (경합 상황 대비)
       setListItems(prev => prev.map(it => it.id === scheduleId ? { ...it, isReminderEnabled: updated.isReminderEnabled } : it))
       setSnackbarMessage(updated.isReminderEnabled ? '알림을 켰습니다' : '알림을 껐습니다')
       setSnackbarOpen(true)
     } catch (_e) {
-      // 실패 시 롤백
       setListItems(prev => prev.map(it => it.id === scheduleId ? { ...it, isReminderEnabled: !enabled } : it))
       setSnackbarMessage('알림 상태 변경에 실패했습니다')
       setSnackbarOpen(true)
       try { console.error('[REMINDER] toggle failed', { scheduleId }) } catch (__e) {}
     }
   }
-
-  
 
   function sortListItems(items: ScheduleListItem[]): ScheduleListItem[] {
     const next = [ ...items ]
@@ -420,7 +397,6 @@ export function CalendarPage() {
               onChange={handleSearchInputChange}
               fullWidth
             />
-            
             {isLoading ? (
               <CalendarListSkeleton count={8} />
             ) : (
@@ -448,7 +424,7 @@ export function CalendarPage() {
       />
       <Dialog
         open={notifOpen}
-        onClose={(_e, _r) => { /* 강제 버튼 닫기만 허용 */ }}
+        onClose={(_e, _r) => {}}
         fullWidth
         maxWidth="sm"
         disableEscapeKeyDown

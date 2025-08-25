@@ -6,7 +6,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@app': '/src',
-      '@pages': '/src/ui/pages',
+      '@pages': '/src/pages',
       '@components': '/src/lib/components',
       '@lib': '/src/lib',
       '@store': '/src/store',
