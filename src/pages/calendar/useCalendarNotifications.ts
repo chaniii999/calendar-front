@@ -21,8 +21,35 @@ export function useCalendarNotifications(options: UseCalendarNotificationsOption
   const audioCtxRef = useRef<AudioContext | null>(null)
   const beepIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const beepStopTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const activeOscillatorsRef = useRef<OscillatorNode[]>([])
+
+  function stopAllAudio() {
+    if (beepIntervalRef.current) { 
+      clearInterval(beepIntervalRef.current); 
+      beepIntervalRef.current = null 
+    }
+    if (beepStopTimeoutRef.current) { 
+      clearTimeout(beepStopTimeoutRef.current); 
+      beepStopTimeoutRef.current = null 
+    }
+    // 모든 활성 오실레이터 즉시 중단
+    activeOscillatorsRef.current.forEach(osc => {
+      try {
+        osc.stop()
+      } catch (_e) {}
+    })
+    activeOscillatorsRef.current = []
+    
+    if (audioCtxRef.current) {
+      try { 
+        audioCtxRef.current.close() 
+      } catch (_e) {}
+      audioCtxRef.current = null
+    }
+  }
 
   function handleNotificationDialogCloseButtonClick() {
+    stopAllAudio()
     setNotifOpen(false)
   }
 
@@ -42,6 +69,8 @@ export function useCalendarNotifications(options: UseCalendarNotificationsOption
         { f: 987.77, d: 0.6 },
       ]
       let t = ctx.currentTime
+      const oscillators: OscillatorNode[] = []
+      
       for (const note of melody) {
         const osc = ctx.createOscillator()
         const gain = ctx.createGain()
@@ -55,11 +84,24 @@ export function useCalendarNotifications(options: UseCalendarNotificationsOption
         gain.connect(ctx.destination)
         osc.start(t)
         osc.stop(t + note.d)
+        if (!isRest) {
+          oscillators.push(osc)
+          activeOscillatorsRef.current.push(osc)
+        }
         t += note.d + 0.05
       }
+      
       audioCtxRef.current = ctx
       const totalMs = (t - ctx.currentTime + 0.2) * 1000
+      
+      // 완료된 오실레이터들을 activeOscillatorsRef에서 제거
       setTimeout(() => {
+        oscillators.forEach(osc => {
+          const index = activeOscillatorsRef.current.indexOf(osc)
+          if (index > -1) {
+            activeOscillatorsRef.current.splice(index, 1)
+          }
+        })
         try { ctx.close() } catch (_e) {}
         if (audioCtxRef.current === ctx) audioCtxRef.current = null
       }, totalMs)
@@ -68,10 +110,7 @@ export function useCalendarNotifications(options: UseCalendarNotificationsOption
 
   useEffect(() => {
     if (!notifOpen) {
-      if (beepIntervalRef.current) { clearInterval(beepIntervalRef.current); beepIntervalRef.current = null }
-      if (beepStopTimeoutRef.current) { clearTimeout(beepStopTimeoutRef.current); beepStopTimeoutRef.current = null }
-      try { audioCtxRef.current?.close() } catch (_e) {}
-      audioCtxRef.current = null
+      stopAllAudio()
       return
     }
     playMelodyOnce()
