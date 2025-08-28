@@ -1,13 +1,34 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { ScheduleApi, type ScheduleResponse } from '@lib/api/schedule'
 import type { ScheduleListItem } from './types'
 import dayjs from 'dayjs'
+
+// 레거시 필드를 포함한 타입 정의
+interface ScheduleResponseWithLegacyFields extends ScheduleResponse {
+  reminderEnabled?: boolean
+}
 
 function normalizeEnabled(value: unknown): boolean {
   if (typeof value === 'boolean') return value
   if (typeof value === 'number') return value !== 0
   if (typeof value === 'string') return value.toLowerCase() === 'true' || value === '1'
   return false
+}
+
+// 중복 제거: 데이터 변환 유틸리티 함수
+function convertScheduleResponseToListItem(item: ScheduleResponseWithLegacyFields): ScheduleListItem {
+  return {
+    id: item.id,
+    title: item.title,
+    scheduleDate: item.scheduleDate,
+    startTime: item.startTime,
+    endTime: item.endTime,
+    color: item.color,
+    isAllDay: item.isAllDay,
+    description: item.description,
+    isReminderEnabled: normalizeEnabled(item.isReminderEnabled ?? item.reminderEnabled),
+    reminderMinutes: item.reminderMinutes,
+  }
 }
 
 function sortListItems(items: ScheduleListItem[]): ScheduleListItem[] {
@@ -24,7 +45,7 @@ function sortListItems(items: ScheduleListItem[]): ScheduleListItem[] {
 
 function isScheduleInPast(item: ScheduleListItem): boolean {
   const now = dayjs()
-  const scheduleDateTime = dayjs(`${item.scheduleDate} ${item.startTime || '00:00'}`)
+  const scheduleDateTime = dayjs(`${item.scheduleDate} ${item.startTime || '00:00'}`, 'YYYY-MM-DD HH:mm')
   return scheduleDateTime.isBefore(now)
 }
 
@@ -41,18 +62,7 @@ export function useCalendarData({ startDate, endDate, handleShowMessage }: UseCa
   const [togglingReminders, setTogglingReminders] = useState<Set<string>>(new Set())
 
   function handleBuildStateFromSchedules(items: ScheduleResponse[]) {
-    const flat: ScheduleListItem[] = items.map((it) => ({
-      id: it.id,
-      title: it.title,
-      scheduleDate: it.scheduleDate,
-      startTime: it.startTime,
-      endTime: it.endTime,
-      color: it.color,
-      isAllDay: it.isAllDay,
-      description: it.description,
-      isReminderEnabled: normalizeEnabled((it as any).isReminderEnabled ?? (it as any).reminderEnabled),
-      reminderMinutes: it.reminderMinutes,
-    }))
+    const flat: ScheduleListItem[] = items.map(convertScheduleResponseToListItem)
     setListItems(sortListItems(flat))
   }
 
@@ -72,30 +82,60 @@ export function useCalendarData({ startDate, endDate, handleShowMessage }: UseCa
     )
   }, [listItems, query])
 
+  // 성능 최적화: useCallback 사용
+  const isTogglingReminder = useCallback((scheduleId: string) => {
+    return togglingReminders.has(scheduleId)
+  }, [togglingReminders])
+
+  // 토글 검증 함수 분리
+  function validateReminderToggle(scheduleId: string, enabled: boolean): ScheduleListItem | null {
+    const target = listItems.find(it => it.id === scheduleId)
+    if (!target || !target.startTime) {
+      if (handleShowMessage) handleShowMessage('시작 시간이 있는 일정만 알림을 켤 수 있습니다')
+      return null
+    }
+
+    if (isScheduleInPast(target)) {
+      if (handleShowMessage) handleShowMessage('지난 일정은 알림을 설정할 수 없습니다')
+      return null
+    }
+
+    return target
+  }
+
+  // 상태 업데이트 함수 분리
+  function updateReminderState(scheduleId: string, enabled: boolean): void {
+    setListItems(prev => prev.map(it => it.id === scheduleId ? { ...it, isReminderEnabled: enabled } : it))
+  }
+
+  // 에러 처리 함수 분리
+  function handleReminderToggleError(scheduleId: string, enabled: boolean, error: unknown): void {
+    updateReminderState(scheduleId, !enabled) // 원래 상태로 복원
+    const errorMessage = error instanceof Error ? error.message : '알림 상태 변경에 실패했습니다'
+    if (handleShowMessage) handleShowMessage(errorMessage)
+    console.error('[REMINDER] toggle failed', { scheduleId, enabled, error })
+  }
+
   async function handleListItemReminderToggle(scheduleId: string, enabled: boolean) {
     // 이미 토글 중인 경우 무시
     if (togglingReminders.has(scheduleId)) {
       return
     }
 
-    try {
-      const target = listItems.find(it => it.id === scheduleId)
-      if (!target || !target.startTime) {
-        if (handleShowMessage) handleShowMessage('시작 시간이 있는 일정만 알림을 켤 수 있습니다')
-        return
-      }
+    // 검증
+    const target = validateReminderToggle(scheduleId, enabled)
+    if (!target) return
 
-      // 과거 일정인지 확인
-      if (isScheduleInPast(target)) {
-        if (handleShowMessage) handleShowMessage('지난 일정은 알림을 설정할 수 없습니다')
-        return
-      }
-      
+    try {
       // 토글 중 상태 추가
-      setTogglingReminders(prev => new Set(prev).add(scheduleId))
+      setTogglingReminders(prev => {
+        const next = new Set(prev)
+        next.add(scheduleId)
+        return next
+      })
       
       // UI를 먼저 업데이트 (optimistic update)
-      setListItems(prev => prev.map(it => it.id === scheduleId ? { ...it, isReminderEnabled: enabled } : it))
+      updateReminderState(scheduleId, enabled)
       
       // 서버 API 호출
       await ScheduleApi.setReminderEnabled(scheduleId, enabled)
@@ -103,11 +143,9 @@ export function useCalendarData({ startDate, endDate, handleShowMessage }: UseCa
       // 성공 메시지 표시
       if (handleShowMessage) handleShowMessage(enabled ? '알림을 켰습니다' : '알림을 껐습니다')
       
-    } catch (_e) {
-      // 실패 시 원래 상태로 복원
-      setListItems(prev => prev.map(it => it.id === scheduleId ? { ...it, isReminderEnabled: !enabled } : it))
-      if (handleShowMessage) handleShowMessage('알림 상태 변경에 실패했습니다')
-      try { console.error('[REMINDER] toggle failed', { scheduleId, enabled }) } catch (__e) {}
+    } catch (error) {
+      // 실패 시 에러 처리
+      handleReminderToggleError(scheduleId, enabled, error)
     } finally {
       // 토글 중 상태 제거
       setTogglingReminders(prev => {
@@ -130,42 +168,23 @@ export function useCalendarData({ startDate, endDate, handleShowMessage }: UseCa
     try {
       // 즉시 서버에 삭제 요청
       await ScheduleApi.remove(scheduleId)
-    } catch (_e) {
+    } catch (error) {
       // 삭제 실패 시 UI에서 복원
       setListItems(prev => sortListItems([ ...prev, target ]))
-      if (handleShowMessage) handleShowMessage('일정 삭제에 실패했습니다')
-      try { console.error('[DELETE] failed', { scheduleId }) } catch (__e) {}
+      const errorMessage = error instanceof Error ? error.message : '일정 삭제에 실패했습니다'
+      if (handleShowMessage) handleShowMessage(errorMessage)
+      console.error('[DELETE] failed', { scheduleId, error })
     }
   }
 
   function handleDialogCreated(item: ScheduleResponse) {
-    setListItems(prev => [{
-      id: item.id,
-      title: item.title,
-      scheduleDate: item.scheduleDate,
-      startTime: item.startTime,
-      endTime: item.endTime,
-      color: item.color,
-      isAllDay: item.isAllDay,
-      description: item.description,
-      isReminderEnabled: normalizeEnabled((item as any).isReminderEnabled ?? (item as any).reminderEnabled),
-      reminderMinutes: item.reminderMinutes,
-    }, ...prev])
+    const newItem = convertScheduleResponseToListItem(item)
+    setListItems(prev => [newItem, ...prev])
   }
 
   function handleEditDialogUpdated(item: ScheduleResponse) {
-    setListItems(prev => prev.map(it => it.id === item.id ? {
-      id: item.id,
-      title: item.title,
-      scheduleDate: item.scheduleDate,
-      startTime: item.startTime,
-      endTime: item.endTime,
-      color: item.color,
-      isAllDay: item.isAllDay,
-      description: item.description,
-      isReminderEnabled: normalizeEnabled((item as any).isReminderEnabled ?? (item as any).reminderEnabled),
-      reminderMinutes: item.reminderMinutes,
-    } : it))
+    const updatedItem = convertScheduleResponseToListItem(item)
+    setListItems(prev => prev.map(it => it.id === item.id ? updatedItem : it))
   }
 
   return {
@@ -178,7 +197,7 @@ export function useCalendarData({ startDate, endDate, handleShowMessage }: UseCa
     handleListItemDelete,
     handleDialogCreated,
     handleEditDialogUpdated,
-    isTogglingReminder: (scheduleId: string) => togglingReminders.has(scheduleId),
+    isTogglingReminder,
   }
 }
 
