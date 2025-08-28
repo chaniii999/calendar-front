@@ -4,13 +4,13 @@ import { LocalizationProvider } from '@mui/x-date-pickers'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import dayjs, { Dayjs } from 'dayjs'
 import { ScheduleApi, ScheduleRequest, ScheduleResponse } from '@lib/api/schedule'
-import { CalendarToolbar, type ViewMode } from '@components/CalendarToolbar'
-import { ScheduleCreateDialog } from '@components/ScheduleCreateDialog'
-import { ScheduleEditDialog } from '@components/ScheduleEditDialog'
-import { ScheduleDetailDialog } from '@components/ScheduleDetailDialog'
-import { CalendarList } from '@components/CalendarList'
-import { CalendarSidebar } from '@components/CalendarSidebar'
-import { CalendarListSkeleton } from '@components/CalendarListSkeleton'
+import { CalendarToolbar, type ViewMode } from '@lib/components/CalendarToolbar'
+import { ScheduleCreateDialog } from '@lib/components/ScheduleCreateDialog'
+import { ScheduleEditDialog } from '@lib/components/ScheduleEditDialog'
+import { ScheduleDetailDialog } from '@lib/components/ScheduleDetailDialog'
+import { CalendarList } from '@lib/components/CalendarList'
+import { CalendarSidebar } from '@lib/components/CalendarSidebar'
+import { CalendarListSkeleton } from '@lib/components/CalendarListSkeleton'
 import { TokenStatusDebugger } from '@lib/components/TokenStatusDebugger'
 import type { ScheduleListItem } from '@pages/calendar/types'
 import { useCalendarNotifications } from './calendar/useCalendarNotifications'
@@ -138,8 +138,6 @@ export function CalendarPage() {
     setSnackbarOpen(false)
   }
 
-  function handleSnackbarUndoButtonClick() { /* TODO: wire undo from useCalendarData if needed */ setSnackbarOpen(false) }
-
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Stack spacing={2}>
@@ -243,13 +241,8 @@ export function CalendarPage() {
       <Snackbar
         open={snackbarOpen}
         onClose={handleSnackbarClose}
-        autoHideDuration={10000}
+        autoHideDuration={3000}
         message={snackbarMessage}
-        action={
-          <Button color="inherit" size="small" onClick={handleSnackbarUndoButtonClick}>
-            되돌리기
-          </Button>
-        }
       />
     </LocalizationProvider>
   )

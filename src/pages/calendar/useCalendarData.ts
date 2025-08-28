@@ -1,12 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { ScheduleApi, type ScheduleResponse } from '@lib/api/schedule'
-import type { ScheduleListItem } from '@pages/calendar/types'
-
-export interface UseCalendarDataOptions {
-  startDate: string
-  endDate: string
-  handleShowMessage?: (message: string) => void
-}
+import type { ScheduleListItem } from './types'
 
 function normalizeEnabled(value: unknown): boolean {
   if (typeof value === 'boolean') return value
@@ -27,12 +21,16 @@ function sortListItems(items: ScheduleListItem[]): ScheduleListItem[] {
   return next
 }
 
+export interface UseCalendarDataOptions {
+  startDate: string
+  endDate: string
+  handleShowMessage?: (message: string) => void
+}
+
 export function useCalendarData({ startDate, endDate, handleShowMessage }: UseCalendarDataOptions) {
   const [listItems, setListItems] = useState<ScheduleListItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [query, setQuery] = useState('')
-  const [pendingDelete, setPendingDelete] = useState<ScheduleListItem | null>(null)
-  const pendingDeleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   function handleBuildStateFromSchedules(items: ScheduleResponse[]) {
     const flat: ScheduleListItem[] = items.map((it) => ({
@@ -85,40 +83,22 @@ export function useCalendarData({ startDate, endDate, handleShowMessage }: UseCa
   }
 
   async function handleListItemDelete(scheduleId: string) {
-    if (pendingDelete) {
-      try { await ScheduleApi.remove(pendingDelete.id) } catch (_e) {}
-      setPendingDelete(null)
-      if (pendingDeleteTimerRef.current) { clearTimeout(pendingDeleteTimerRef.current); pendingDeleteTimerRef.current = null }
-    }
-
     const target = listItems.find(it => it.id === scheduleId)
     if (!target) return
 
+    // UI에서 즉시 제거
     setListItems(prev => prev.filter(it => it.id !== scheduleId))
-    setPendingDelete(target)
+    
     if (handleShowMessage) handleShowMessage('일정을 삭제했습니다')
 
-    pendingDeleteTimerRef.current = setTimeout(async () => {
-      if (!pendingDelete) return
-      try {
-        await ScheduleApi.remove(target.id)
-      } catch (_e) {
-        setListItems(prev => sortListItems([ ...prev, target ]))
-      } finally {
-        setPendingDelete(null)
-        pendingDeleteTimerRef.current = null
-      }
-    }, 10000)
-  }
-
-  function undoPendingDelete() {
-    if (pendingDeleteTimerRef.current) {
-      clearTimeout(pendingDeleteTimerRef.current)
-      pendingDeleteTimerRef.current = null
-    }
-    if (pendingDelete) {
-      setListItems(prev => sortListItems([ ...prev, pendingDelete ]))
-      setPendingDelete(null)
+    try {
+      // 즉시 서버에 삭제 요청
+      await ScheduleApi.remove(scheduleId)
+    } catch (_e) {
+      // 삭제 실패 시 UI에서 복원
+      setListItems(prev => sortListItems([ ...prev, target ]))
+      if (handleShowMessage) handleShowMessage('일정 삭제에 실패했습니다')
+      try { console.error('[DELETE] failed', { scheduleId }) } catch (__e) {}
     }
   }
 
@@ -162,8 +142,6 @@ export function useCalendarData({ startDate, endDate, handleShowMessage }: UseCa
     handleListItemDelete,
     handleDialogCreated,
     handleEditDialogUpdated,
-    pendingDelete,
-    undoPendingDelete,
   }
 }
 
