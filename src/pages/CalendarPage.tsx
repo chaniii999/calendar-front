@@ -11,6 +11,7 @@ import { ScheduleDetailDialog } from '@components/ScheduleDetailDialog'
 import { CalendarList } from '@components/CalendarList'
 import { CalendarSidebar } from '@components/CalendarSidebar'
 import { CalendarListSkeleton } from '@components/CalendarListSkeleton'
+import { TokenStatusDebugger } from '@lib/components/TokenStatusDebugger'
 import type { ScheduleListItem } from '@pages/calendar/types'
 import { useCalendarNotifications } from './calendar/useCalendarNotifications'
 import { useCalendarData } from './calendar/useCalendarData'
@@ -142,6 +143,7 @@ export function CalendarPage() {
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Stack spacing={2}>
+        <TokenStatusDebugger show={import.meta.env.DEV} />
         <CalendarToolbar
           cursor={cursor}
           view={view}

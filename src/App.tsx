@@ -5,7 +5,8 @@ import { CalendarPage } from '@pages/CalendarPage'
 import LoginSuccess from '@pages/LoginSuccess'
 import { readTokensFromStorage, clearTokensFromStorage, saveTokensToStorage } from '@lib/auth/session'
 import { setTokens, clearAuthTokens } from '@lib/api/http'
-import { API_BASE } from '@lib/api/config'
+import { API_BASE, OAUTH2_LOGIN_URL } from '@lib/api/config'
+import { useAutoTokenRefresh } from '@lib/auth/useAutoTokenRefresh'
 
 function NavTabs() {
   const navigate = useNavigate()
@@ -45,14 +46,17 @@ function NavTabs() {
   const tokens = readTokensFromStorage()
   const isAuthed = Boolean(tokens.accessToken && tokens.refreshToken)
   const handleLoginButtonClick = () => {
-    const url = `${API_BASE}/api/auth/login/google`
-    window.location.href = url
+    if (import.meta.env.DEV) {
+      console.log('🔐 OAuth2 로그인 시작:', OAUTH2_LOGIN_URL)
+    }
+    window.location.href = OAUTH2_LOGIN_URL
   }
   const handleLogoutButtonClick = () => {
     clearAuthTokens()
     clearTokensFromStorage()
-    // 루트 도메인으로 이동
-    window.location.replace('https://everyplan.site/')
+    // 환경별 로그아웃 리다이렉트
+    const logoutUrl = import.meta.env.DEV ? 'http://localhost:5173/' : 'https://everyplan.site/'
+    window.location.replace(logoutUrl)
   }
   const shouldShowButtons = false
 
@@ -83,6 +87,26 @@ function NavTabs() {
 export default function App() {
   const [isAuthChecking, setIsAuthChecking] = useState(true)
   const [isAuthed, setIsAuthed] = useState(false)
+
+  // 토큰 자동 갱신 Hook 사용
+  const { getTokenStatus } = useAutoTokenRefresh({
+    onTokenRefresh: (newToken) => {
+      if (import.meta.env.DEV) {
+        console.log('토큰이 자동으로 갱신되었습니다:', newToken.substring(0, 20) + '...')
+      }
+    },
+    onTokenExpired: () => {
+      if (import.meta.env.DEV) {
+        console.log('토큰이 만료되어 로그아웃됩니다.')
+      }
+      clearAuthTokens()
+      clearTokensFromStorage()
+      setIsAuthed(false)
+      window.location.replace('/')
+    },
+    checkInterval: 10000, // 10초마다 확인 (더 자주 확인)
+    expirationThreshold: 2, // 2분 전에 만료 예정 (더 일찍 갱신)
+  })
 
   function handleAppInitValidateAuth() {
     const tokens = readTokensFromStorage()
@@ -137,7 +161,10 @@ export default function App() {
 
 function LoginGate() {
   const handleLoginButtonClick = () => {
-    window.location.href = `${API_BASE}/api/auth/login/google`
+    if (import.meta.env.DEV) {
+      console.log('🔐 OAuth2 로그인 시작:', OAUTH2_LOGIN_URL)
+    }
+    window.location.href = OAUTH2_LOGIN_URL
   }
   return (
     <Paper sx={{ p: 4, textAlign: 'center' }}>
