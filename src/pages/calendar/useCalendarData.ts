@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { ScheduleApi, type ScheduleResponse } from '@lib/api/schedule'
 import type { ScheduleListItem } from './types'
+import dayjs from 'dayjs'
 
 function normalizeEnabled(value: unknown): boolean {
   if (typeof value === 'boolean') return value
@@ -21,6 +22,12 @@ function sortListItems(items: ScheduleListItem[]): ScheduleListItem[] {
   return next
 }
 
+function isScheduleInPast(item: ScheduleListItem): boolean {
+  const now = dayjs()
+  const scheduleDateTime = dayjs(`${item.scheduleDate} ${item.startTime || '00:00'}`)
+  return scheduleDateTime.isBefore(now)
+}
+
 export interface UseCalendarDataOptions {
   startDate: string
   endDate: string
@@ -31,6 +38,7 @@ export function useCalendarData({ startDate, endDate, handleShowMessage }: UseCa
   const [listItems, setListItems] = useState<ScheduleListItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [query, setQuery] = useState('')
+  const [togglingReminders, setTogglingReminders] = useState<Set<string>>(new Set())
 
   function handleBuildStateFromSchedules(items: ScheduleResponse[]) {
     const flat: ScheduleListItem[] = items.map((it) => ({
@@ -65,20 +73,48 @@ export function useCalendarData({ startDate, endDate, handleShowMessage }: UseCa
   }, [listItems, query])
 
   async function handleListItemReminderToggle(scheduleId: string, enabled: boolean) {
+    // 이미 토글 중인 경우 무시
+    if (togglingReminders.has(scheduleId)) {
+      return
+    }
+
     try {
       const target = listItems.find(it => it.id === scheduleId)
       if (!target || !target.startTime) {
         if (handleShowMessage) handleShowMessage('시작 시간이 있는 일정만 알림을 켤 수 있습니다')
         return
       }
+
+      // 과거 일정인지 확인
+      if (isScheduleInPast(target)) {
+        if (handleShowMessage) handleShowMessage('지난 일정은 알림을 설정할 수 없습니다')
+        return
+      }
+      
+      // 토글 중 상태 추가
+      setTogglingReminders(prev => new Set(prev).add(scheduleId))
+      
+      // UI를 먼저 업데이트 (optimistic update)
       setListItems(prev => prev.map(it => it.id === scheduleId ? { ...it, isReminderEnabled: enabled } : it))
-      const updated = await ScheduleApi.setReminderEnabled(scheduleId, enabled)
-      setListItems(prev => prev.map(it => it.id === scheduleId ? { ...it, isReminderEnabled: updated.isReminderEnabled } : it))
-      if (handleShowMessage) handleShowMessage(updated.isReminderEnabled ? '알림을 켰습니다' : '알림을 껐습니다')
+      
+      // 서버 API 호출
+      await ScheduleApi.setReminderEnabled(scheduleId, enabled)
+      
+      // 성공 메시지 표시
+      if (handleShowMessage) handleShowMessage(enabled ? '알림을 켰습니다' : '알림을 껐습니다')
+      
     } catch (_e) {
+      // 실패 시 원래 상태로 복원
       setListItems(prev => prev.map(it => it.id === scheduleId ? { ...it, isReminderEnabled: !enabled } : it))
       if (handleShowMessage) handleShowMessage('알림 상태 변경에 실패했습니다')
-      try { console.error('[REMINDER] toggle failed', { scheduleId }) } catch (__e) {}
+      try { console.error('[REMINDER] toggle failed', { scheduleId, enabled }) } catch (__e) {}
+    } finally {
+      // 토글 중 상태 제거
+      setTogglingReminders(prev => {
+        const next = new Set(prev)
+        next.delete(scheduleId)
+        return next
+      })
     }
   }
 
@@ -142,6 +178,7 @@ export function useCalendarData({ startDate, endDate, handleShowMessage }: UseCa
     handleListItemDelete,
     handleDialogCreated,
     handleEditDialogUpdated,
+    isTogglingReminder: (scheduleId: string) => togglingReminders.has(scheduleId),
   }
 }
 

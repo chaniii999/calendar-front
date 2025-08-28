@@ -2,7 +2,7 @@ import React from 'react'
 import { List, ListItem, ListItemText, Chip, Stack, Typography, Divider, Paper, IconButton } from '@mui/material'
 import dayjs from 'dayjs'
 import type { ScheduleListItem } from '@pages/calendar/types'
-import { CalendarListItemCard } from '@components/CalendarListItemCard'
+import { CalendarListItemCard } from '@lib/components/CalendarListItemCard'
 
 export interface CalendarListProps {
 	items: ScheduleListItem[]
@@ -11,6 +11,7 @@ export interface CalendarListProps {
 	onDelete?: (scheduleId: string) => void
 	onItemClick?: (scheduleId: string) => void
 	onToggleReminder?: (scheduleId: string, enabled: boolean) => void
+	isTogglingReminder?: (scheduleId: string) => boolean
 }
 
 function formatTimeRange(item: ScheduleListItem): string {
@@ -20,7 +21,7 @@ function formatTimeRange(item: ScheduleListItem): string {
 	return ''
 }
 
-export function CalendarList({ items, groupByDate = true, onEdit, onDelete, onItemClick, onToggleReminder }: CalendarListProps) {
+export function CalendarList({ items, groupByDate = true, onEdit, onDelete, onItemClick, onToggleReminder, isTogglingReminder }: CalendarListProps) {
 	if (!items.length) {
 		return <Typography variant="body2" color="text.secondary">표시할 일정이 없습니다.</Typography>
 	}
@@ -46,7 +47,15 @@ export function CalendarList({ items, groupByDate = true, onEdit, onDelete, onIt
 		return (
 			<Stack spacing={1}>
 				{items.map(it => (
-					<CalendarListItemCard key={it.id} item={it} onClick={onItemClick} onEdit={onEdit} onDelete={onDelete} onToggleReminder={onToggleReminder} />
+					<CalendarListItemCard 
+						key={it.id} 
+						item={it} 
+						onClick={onItemClick} 
+						onEdit={onEdit} 
+						onDelete={onDelete} 
+						onToggleReminder={onToggleReminder}
+						isTogglingReminder={isTogglingReminder ? isTogglingReminder(it.id) : false}
+					/>
 				))}
 			</Stack>
 		)
@@ -71,7 +80,15 @@ export function CalendarList({ items, groupByDate = true, onEdit, onDelete, onIt
 						</Typography>
 						<Stack spacing={1}>
 							{grouped[date].map(it => (
-								<CalendarListItemCard key={it.id} item={it} onClick={onItemClick} onEdit={onEdit} onDelete={onDelete} onToggleReminder={onToggleReminder} />
+								<CalendarListItemCard 
+									key={it.id} 
+									item={it} 
+									onClick={onItemClick} 
+									onEdit={onEdit} 
+									onDelete={onDelete} 
+									onToggleReminder={onToggleReminder}
+									isTogglingReminder={isTogglingReminder ? isTogglingReminder(it.id) : false}
+								/>
 							))}
 						</Stack>
 					</Stack>

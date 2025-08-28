@@ -20,7 +20,7 @@ export function CalendarPage() {
   const [cursor, setCursor] = useState<Dayjs>(dayjs())
   const [dialogOpen, setDialogOpen] = useState(false)
   const [view, setView] = useState<ViewMode>('month')
-  const { listItems, isLoading, query, setQuery, filteredItems, handleListItemReminderToggle, handleListItemDelete, handleDialogCreated, handleEditDialogUpdated } = useCalendarData({
+  const { listItems, isLoading, query, setQuery, filteredItems, handleListItemReminderToggle, handleListItemDelete, handleDialogCreated, handleEditDialogUpdated, isTogglingReminder } = useCalendarData({
     startDate: dayjs(cursor).startOf('month').format('YYYY-MM-DD'),
     endDate: dayjs(cursor).endOf('month').format('YYYY-MM-DD'),
     handleShowMessage: (m: string) => { setSnackbarMessage(m); setSnackbarOpen(true) }
@@ -178,6 +178,7 @@ export function CalendarPage() {
                 onDelete={handleListItemDelete}
                 onItemClick={handleListItemClick}
                 onToggleReminder={handleListItemReminderToggle}
+                isTogglingReminder={isTogglingReminder}
               />
             )}
           </Stack>

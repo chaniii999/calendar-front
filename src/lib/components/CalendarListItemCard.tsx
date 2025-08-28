@@ -12,6 +12,7 @@ export interface CalendarListItemCardProps {
 	onDelete?: (scheduleId: string) => void
 	showDateChip?: boolean
 	onToggleReminder?: (scheduleId: string, enabled: boolean) => void
+	isTogglingReminder?: boolean
 }
 
 function buildTimeText(item: ScheduleListItem): string {
@@ -21,7 +22,13 @@ function buildTimeText(item: ScheduleListItem): string {
 	return ''
 }
 
-export function CalendarListItemCard({ item, onClick, onEdit, onDelete, showDateChip, onToggleReminder }: CalendarListItemCardProps) {
+function isScheduleInPast(item: ScheduleListItem): boolean {
+	const now = dayjs()
+	const scheduleDateTime = dayjs(`${item.scheduleDate} ${item.startTime || '00:00'}`)
+	return scheduleDateTime.isBefore(now)
+}
+
+export function CalendarListItemCard({ item, onClick, onEdit, onDelete, showDateChip, onToggleReminder, isTogglingReminder }: CalendarListItemCardProps) {
 	function handleRootClick() {
 		if (onClick) onClick(item.id)
 	}
@@ -44,6 +51,8 @@ export function CalendarListItemCard({ item, onClick, onEdit, onDelete, showDate
 
 	const timeText = buildTimeText(item)
 	const leftBorderColor = item.color || 'primary.main'
+	const isPast = isScheduleInPast(item)
+	const showReminderToggle = item.startTime && !isPast
 
 	return (
 		<Paper
@@ -74,13 +83,14 @@ export function CalendarListItemCard({ item, onClick, onEdit, onDelete, showDate
 					)}
 				</Stack>
 				<Stack direction="row" spacing={0.5} alignItems="center">
-					{item.startTime && (
+					{showReminderToggle && (
 						<Tooltip title={item.isReminderEnabled ? '알림 켜짐' : '알림 꺼짐'}>
 							<Switch
 								size="small"
 								checked={Boolean(item.isReminderEnabled)}
 								onChange={handleReminderToggleChange}
 								onClick={handleReminderSwitchClick}
+								disabled={isTogglingReminder}
 							/>
 						</Tooltip>
 					)}
