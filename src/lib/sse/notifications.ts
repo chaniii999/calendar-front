@@ -82,13 +82,19 @@ export function startNotificationsSSE(
 	}
 
 	function buildConnector(): string | null {
+		// 세션 기반 연결을 우선 시도 (토큰 노출 없음)
+		if (url.includes('/subscribe')) {
+			return url // 세션 기반 엔드포인트는 토큰 없이 연결
+		}
+		
+		// 기존 토큰 기반 연결 (하위 호환성)
 		const token = options.getAccessToken ? options.getAccessToken() : (options.accessToken ?? null)
 		if (!token) return null
 		// lightweight JWT check: header.payload.signature (two dots) and not an email
 		const looksLikeJwt = typeof token === 'string' && token.split('.').length === 3 && token.indexOf('@') === -1
 		if (!looksLikeJwt) {
 			// skip connecting with invalid token; let reconnection loop fetch a refreshed token later
-			try { console.warn('[SSE] invalid token format; waiting for refresh') } catch (_e) {}
+			try { console.warn('[SSE] invalid token format; waiting for refresh') } catch (_e) {} 
 			return null
 		}
 		return `${url}?token=${encodeURIComponent(token)}`
@@ -97,11 +103,14 @@ export function startNotificationsSSE(
 	async function connect() {
 		if (stopped) return
 		try {
-			// 토큰을 쿼리로 부착 (EventSource는 기본 Authorization 헤더 미지원)
 			const connector = buildConnector()
 			if (!connector) throw new Error('No access token')
-			if (isDebugLoggingEnabled) { try { console.info('[SSE] connecting', { url }) } catch (_e) {} }
-			es = new EventSource(connector, { withCredentials: false })
+			if (isDebugLoggingEnabled) { try { console.info('[SSE] connecting', { url: connector }) } catch (_e) {} }
+			
+			// 세션 기반 연결인지 확인하여 withCredentials 설정
+			const isSessionBased = connector.includes('/subscribe') && !connector.includes('token=')
+			es = new EventSource(connector, { withCredentials: isSessionBased })
+			
 			bindEventHandlers(es)
 		} catch (_e) {
 			if (handlers.handleError) handlers.handleError('SSE init failure')
@@ -118,7 +127,11 @@ export function startNotificationsSSE(
 					const connector = buildConnector()
 					if (!connector) throw new Error('No access token')
 					if (isDebugLoggingEnabled) { try { console.info('[SSE] reconnecting') } catch (_e) {} }
-					es = new EventSource(connector, { withCredentials: false })
+					
+					// 세션 기반 연결인지 확인하여 withCredentials 설정
+					const isSessionBased = connector.includes('/subscribe') && !connector.includes('token=')
+					es = new EventSource(connector, { withCredentials: isSessionBased })
+					
 					bindEventHandlers(es)
 					reconnectDelay = Math.min(reconnectDelay * 2, maxReconnectDelay)
 				} catch (_e) {

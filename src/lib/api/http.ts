@@ -6,7 +6,7 @@ import { clearTokensFromStorage, saveTokensToStorage } from '@lib/auth/session'
 export function setTokens(nextAccessToken: string, nextRefreshToken: string) {
   accessToken = nextAccessToken
   refreshToken = nextRefreshToken
-  // 로컬 스토리지에도 저장
+  // 메모리에 저장 (localStorage 사용 금지)
   saveTokensToStorage(nextAccessToken, nextRefreshToken)
 }
 
@@ -24,7 +24,7 @@ export async function http<T>(input: RequestInfo, init?: RequestInit): Promise<T
     ...(init?.headers as Record<string, string> ?? {}),
   }
   
-  // 토큰이 없으면 로컬 스토리지에서 읽어오기
+  // 토큰이 없으면 메모리에서 읽어오기
   if (!accessToken) {
     const storedTokens = await import('@lib/auth/session').then(m => m.readTokensFromStorage())
     if (storedTokens.accessToken) {
@@ -33,10 +33,20 @@ export async function http<T>(input: RequestInfo, init?: RequestInit): Promise<T
     }
   }
   
-  if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`
+  // 세션 기반 인증을 위해 credentials: 'include' 설정
+  const fetchOptions: RequestInit = {
+    ...init,
+    credentials: 'include', // 세션 쿠키 포함
+    headers
+  }
+  
+  // 토큰이 있으면 Authorization 헤더 추가 (하위 호환성)
+  if (accessToken) {
+    headers['Authorization'] = `Bearer ${accessToken}`
+  }
   
   const resolvedUrl = typeof input === 'string' && input.startsWith('/') ? (API_BASE + input) : input
-  const res = await fetch(resolvedUrl, { ...init, headers })
+  const res = await fetch(resolvedUrl, fetchOptions)
   
   // 새로운 토큰이 헤더에 있으면 자동으로 저장
   const newAccessToken = res.headers.get('new-access-token')
